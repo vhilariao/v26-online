@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.1</title>
+  <title>V26 Web v1.2</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -124,6 +124,7 @@
     .bench-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; border: 1px solid var(--border); padding: 10px; border-radius: 12px; background: rgba(9,15,29,.72); }
     .small { font-size: 12px; }
     .footer-note { color: var(--muted); font-size: 12px; padding: 18px 0 4px; text-align: center; }
+    .context-note { margin-top: 8px; }
     @media (max-width: 860px) {
       .grid { grid-template-columns: 1fr; }
       .row, .row-3 { grid-template-columns: 1fr; }
@@ -139,7 +140,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.1</h1>
+          <h1>V26 Web v1.2</h1>
           <div class="subtitle">Interface Safari para conversar com a V26 Core API</div>
         </div>
       </div>
@@ -202,7 +203,11 @@
         <label for="oddsText">Odds Pinnacle</label>
         <textarea id="oddsText" placeholder="Cole aqui as odds..."></textarea>
         <label for="contextText">Estatísticas / contexto</label>
-        <textarea id="contextText" placeholder="Cole contexto pré-live/live. Na versão final, isso será preenchido por providers/API."></textarea>
+        <textarea id="contextText" placeholder="Cole contexto pré-live/live. O botão abaixo pode preencher um contexto assistido para revisão."></textarea>
+        <div class="actions">
+          <button id="contextBtn" class="good">Buscar contexto automaticamente</button>
+        </div>
+        <div id="contextInfo" class="muted small context-note">Contexto automático assistido: revise antes de rodar a V26.</div>
         <div class="actions">
           <button id="analyzeBtn" class="primary">Rodar V26 Core</button>
           <button id="parseBtn">Testar parser</button>
@@ -284,6 +289,17 @@
         context: $('contextText').value
       };
     }
+    function contextPayload() {
+      return {
+        home_team: $('homeTeam').value.trim(),
+        away_team: $('awayTeam').value.trim(),
+        competition: $('competition').value.trim(),
+        mode: $('mode').value,
+        odds_text: $('oddsText').value,
+        market_focus: '',
+        moment: ''
+      };
+    }
     function classSpan(cls) {
       return `<span class="class-${String(cls).replace('+','\\+')}" style="font-weight:900">${cls}</span>`;
     }
@@ -340,6 +356,7 @@
       $('mode').value = s.mode;
       $('oddsText').value = s.oddsText;
       $('contextText').value = s.contextText;
+      $('contextInfo').innerHTML = '<span class="muted">Contexto do benchmark preenchido. Revise antes de rodar a V26.</span>';
       $('resultBox').innerHTML = '<span class="muted">Benchmark preenchido. Toque em Rodar V26 Core.</span>';
     }));
     $('saveApi').addEventListener('click', () => {
@@ -354,6 +371,24 @@
         setStatus('ok', `Conexão OK com a V26 Core API · ${data.version || ''}`);
       } catch (err) {
         setStatus('err', `Erro ao conectar com a API: ${err.message || err}`);
+      }
+    });
+    $('contextBtn').addEventListener('click', async () => {
+      const info = $('contextInfo');
+      const btn = $('contextBtn');
+      btn.disabled = true;
+      info.innerHTML = '<span class="muted">Buscando contexto assistido...</span>';
+      try {
+        const data = await request('/context/search', { method: 'POST', body: JSON.stringify(contextPayload()) });
+        $('contextText').value = data.context_text || '';
+        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
+        info.innerHTML = `<div class="success">Contexto carregado · Fonte: ${data.source || '—'} · Confiança da fonte: ${data.source_confidence || '—'} · Revisão manual necessária.${warningText}</div>`;
+        setStatus('ok', 'Contexto carregado');
+      } catch (err) {
+        info.innerHTML = `<div class="error">Erro ao buscar contexto: ${err.message || err}</div>`;
+        setStatus('err', 'Erro ao buscar contexto');
+      } finally {
+        btn.disabled = false;
       }
     });
     $('parseBtn').addEventListener('click', async () => {
@@ -381,6 +416,7 @@
     $('clearBtn').addEventListener('click', () => {
       ['homeTeam','awayTeam','competition','oddsText','contextText'].forEach(id => $(id).value = '');
       $('mode').value = 'pre_live';
+      $('contextInfo').innerHTML = '<span class="muted">Contexto automático assistido: revise antes de rodar a V26.</span>';
       $('resultBox').innerHTML = '<span class="muted">Nenhuma análise rodada ainda.</span>';
     });
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
