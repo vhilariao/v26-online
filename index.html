@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.5</title>
+  <title>V26 Web v1.6</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -187,8 +187,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.5</h1>
-          <div class="subtitle">Varredura IA-guided + Contexto Mestre + V26 Core</div>
+          <h1>V26 Web v1.6</h1>
+          <div class="subtitle">Matriz de Pesos + Varredura IA + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -260,7 +260,8 @@
 
         <div class="actions">
           <button id="contextBtn" class="good">Buscar dados auxiliares</button>
-          <button id="scanBtn" class="primary">Varredura IA v1.5</button>
+          <button id="scanBtn" class="primary">Varredura IA v1.6</button>
+          <button id="weightsBtn">Ver pesos</button>
           <button id="buildMasterBtn" class="warn">Consolidar Contexto Mestre</button>
         </div>
         <div id="contextInfo" class="muted small context-note">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</div>
@@ -269,7 +270,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v1.5: IA/varredura organiza o contexto, mas não decide aposta. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v1.6: pesos das fontes medem força do contexto, mas não decidem aposta. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -467,18 +468,54 @@
       `).join('');
       $('scanBox').innerHTML = `
         <div class="scan-box">
-          <b>Varredura IA v1.5 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
+          <b>Varredura IA v1.6 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
           <div class="muted" style="margin-top:6px;">Foram gerados ${links.length} links/perguntas. Abra os principais, confirme notícias/desfalques e ajuste o Contexto Mestre antes de rodar a V26.</div>
           <div class="scan-links">${topLinks}</div>
         </div>
       `;
     }
 
+
+    function renderWeights(data) {
+      const rows = (data.sources || []).map(s => `
+        <div class="scan-link">
+          <b>${s.label}</b>
+          <span>Tier ${s.tier} · peso ${s.default_weight} · teto ${s.max_weight}</span>
+          <span>${s.notes}</span>
+        </div>
+      `).join('');
+      $('scanBox').innerHTML = `
+        <div class="scan-box">
+          <b>Matriz de Pesos v1.6</b>
+          <div class="muted" style="margin-top:6px;">Peso mede força do contexto/fonte, não valor da aposta. Fonte fraca isolada não sobe classe.</div>
+          <div class="scan-links">${rows}</div>
+        </div>
+      `;
+    }
+
+    if ($('weightsBtn')) $('weightsBtn').addEventListener('click', async () => {
+      const info = $('contextInfo');
+      const btn = $('weightsBtn');
+      btn.disabled = true;
+      info.innerHTML = '<span class="muted">Carregando matriz de pesos...</span>';
+      try {
+        const data = await request('/context/source-weights');
+        renderWeights(data);
+        info.innerHTML = '<div class="success">Matriz de pesos v1.6 carregada.</div>';
+        setStatus('ok', 'Pesos carregados');
+      } catch (err) {
+        info.innerHTML = `<div class="error">Erro ao carregar pesos: ${err.message || err}</div>`;
+        setStatus('err', 'Erro nos pesos');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
     if ($('scanBtn')) $('scanBtn').addEventListener('click', async () => {
       const info = $('contextInfo');
       const btn = $('scanBtn');
       btn.disabled = true;
-      info.innerHTML = '<span class="muted">Gerando varredura IA v1.5...</span>';
+      info.innerHTML = '<span class="muted">Gerando varredura IA v1.6...</span>';
       try {
         const data = await request('/context/scan', { method: 'POST', body: JSON.stringify(scanPayload()) });
         if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
@@ -488,7 +525,7 @@
         }
         renderScanLinks(data);
         const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        info.innerHTML = `<div class="success">Varredura IA v1.5 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
+        info.innerHTML = `<div class="success">Varredura IA v1.6 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
         setStatus('ok', 'Varredura IA pronta');
       } catch (err) {
         info.innerHTML = `<div class="error">Erro na varredura IA: ${err.message || err}</div>`;
@@ -529,7 +566,7 @@
 
       const parts = [];
       parts.push(`CONTEXTO MESTRE V26 — ${home} x ${away}${comp ? ' · ' + comp : ''} · ${mode}`);
-      parts.push('REGRA DE PRIORIDADE: contexto manual/leitura real/odds atuais prevalecem sobre dados auxiliares automáticos. Se houver divergência, ignorar dado auxiliar fraco e manter a leitura mestre.');
+      parts.push('REGRA DE PRIORIDADE v1.6: contexto manual/leitura real/odds atuais prevalecem sobre dados auxiliares automáticos. Matriz de pesos: ESPN/GE/notícia local/desfalque/odds/live stats peso 20+, SofaScore 15, FootyStats 14, Academia 10, SportyTrader/WinDrawWin 8, TheSportsDB 5. Se houver divergência, ignorar dado auxiliar fraco e manter a leitura mestre.');
       if (odds) parts.push(`ODDS/LINHAS INFORMADAS:\n${odds}`);
       if (manual) {
         parts.push(`LEITURA MESTRE MANUAL:\n${manual}`);
