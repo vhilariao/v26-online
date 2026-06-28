@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.7</title>
+  <title>V26 Web v1.8</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -187,8 +187,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.7</h1>
-          <div class="subtitle">Coleta por Blocos + Matriz de Pesos + V26 Core</div>
+          <h1>V26 Web v1.8</h1>
+          <div class="subtitle">Varredura Web + Coleta por Blocos + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -260,7 +260,8 @@
 
         <div class="actions">
           <button id="contextBtn" class="good">Buscar dados auxiliares</button>
-          <button id="scanBtn" class="primary">Varredura IA v1.7</button>
+          <button id="scanBtn" class="primary">Varredura IA v1.8</button>
+          <button id="webScanBtn" class="good">Varredura Web v1.8</button>
           <button id="weightsBtn">Ver pesos</button>
           <button id="buildMasterBtn" class="warn">Consolidar Contexto Mestre</button>
         </div>
@@ -277,7 +278,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v1.7: achados por fonte viram blocos ponderados. Pesos medem força do contexto, não decidem aposta. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v1.8: varredura web coleta achados, converte em blocos ponderados e V26 decide. Requer Tavily API para busca real. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -475,7 +476,7 @@
       `).join('');
       $('scanBox').innerHTML = `
         <div class="scan-box">
-          <b>Varredura IA v1.7 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
+          <b>Varredura IA v1.8 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
           <div class="muted" style="margin-top:6px;">Foram gerados ${links.length} links/perguntas. Abra os principais, confirme notícias/desfalques e ajuste o Contexto Mestre antes de rodar a V26.</div>
           <div class="scan-links">${topLinks}</div>
         </div>
@@ -483,6 +484,89 @@
     }
 
 
+
+
+    function webScanPayload() {
+      return {
+        home_team: $('homeTeam').value.trim(),
+        away_team: $('awayTeam').value.trim(),
+        competition: $('competition').value.trim(),
+        mode: $('mode').value,
+        odds_text: $('oddsText').value,
+        market_focus: '',
+        manual_context: $('contextText').value,
+        current_context_master: $('finalContextText') ? $('finalContextText').value : '',
+        max_queries: 6,
+        max_results_per_query: 4
+      };
+    }
+
+    function renderWebScan(data) {
+      const results = data.results || [];
+      const blocks = data.blocks || [];
+      const resultRows = results.slice(0, 12).map((r, idx) => `
+        <a class="scan-link" href="${r.url}" target="_blank" rel="noopener">
+          <b>${idx + 1}. ${r.title || r.domain}</b>
+          <span>${r.domain} · ${r.query}</span>
+          <span>${(r.content || '').slice(0, 180)}</span>
+        </a>
+      `).join('');
+      const blockRows = blocks.slice(0, 10).map(b => `
+        <div class="scan-link">
+          <b>${b.score} pts · ${b.tier} · ${b.source_label}</b>
+          <span>${b.info_type} · ${b.confirmed ? 'confirmado' : 'não confirmado'} · ${b.impact_label}</span>
+          <span>${b.text.slice(0, 220)}</span>
+        </div>
+      `).join('');
+      const setup = data.status === 'setup_required';
+      const googleLinks = ((data.metadata || {}).google_links || []).map((url, idx) => `
+        <a class="scan-link" href="${url}" target="_blank" rel="noopener">
+          <b>${idx + 1}. Busca manual sugerida</b>
+          <span>${(data.queries || [])[idx] || url}</span>
+        </a>
+      `).join('');
+
+      $('scanBox').innerHTML = `
+        <div class="scan-box">
+          <b>${setup ? 'Configuração necessária' : 'Varredura Web v1.8 concluída'} · Confiança ${data.source_confidence || '—'} · Teto ${data.context_cap || '—'}</b>
+          <div class="muted" style="margin-top:6px;">
+            ${setup ? 'Adicione TAVILY_API_KEY no Render para ativar a busca automática real.' : 'Resultados web convertidos em blocos ponderados. Revise antes de rodar a V26.'}
+          </div>
+          ${setup ? `<div class="scan-links">${googleLinks}</div>` : `<div class="scan-links">${resultRows}</div><div class="scan-links">${blockRows}</div>`}
+        </div>
+      `;
+    }
+
+    if ($('webScanBtn')) $('webScanBtn').addEventListener('click', async () => {
+      const info = $('contextInfo');
+      const btn = $('webScanBtn');
+      btn.disabled = true;
+      info.innerHTML = '<span class="muted">Executando varredura web v1.8...</span>';
+      try {
+        const data = await request('/context/scan-web', { method: 'POST', body: JSON.stringify(webScanPayload()) });
+        if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
+        if ($('sourceBlocksText') && (data.blocks || []).length) {
+          $('sourceBlocksText').value = (data.blocks || []).map(b => {
+            const confirmed = b.confirmed ? 'sim' : 'não';
+            return `${b.source_key} | ${b.info_type} | ${confirmed} | ${b.impact} | ${b.text}`;
+          }).join('\n');
+        }
+        renderWebScan(data);
+        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
+        if (data.status === 'setup_required') {
+          info.innerHTML = `<div class="warn">Varredura Web v1.8 instalada, mas precisa da chave TAVILY_API_KEY no Render.${warningText}</div>`;
+          setStatus('warn', 'Tavily pendente');
+        } else {
+          info.innerHTML = `<div class="success">Varredura Web v1.8 executada. Contexto Mestre atualizado.${warningText}</div>`;
+          setStatus('ok', 'Web scan ok');
+        }
+      } catch (err) {
+        info.innerHTML = `<div class="error">Erro na varredura web: ${err.message || err}</div>`;
+        setStatus('err', 'Erro web scan');
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     const SOURCE_ALIASES = {
       'espn': 'espn',
@@ -648,7 +732,7 @@
         }
         renderScanLinks(data);
         const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        info.innerHTML = `<div class="success">Varredura IA v1.7 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
+        info.innerHTML = `<div class="success">Varredura IA v1.8 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
         setStatus('ok', 'Varredura IA pronta');
       } catch (err) {
         info.innerHTML = `<div class="error">Erro na varredura IA: ${err.message || err}</div>`;
