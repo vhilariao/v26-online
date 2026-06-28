@@ -249,7 +249,7 @@
       }
     };
 
-    function apiBase() { return apiInput.value.trim().replace(/\/$/, ''); }
+    function apiBase() { return apiInput.value.trim().replace(/\/+$/, ''); }
     function setStatus(kind, text) {
       const box = $('apiStatus');
       const dot = box.querySelector('.dot');
@@ -338,9 +338,11 @@
       $('resultBox').innerHTML = '<span class="muted">Benchmark preenchido. Toque em Rodar V26 Core.</span>';
     }));
     $('saveApi').addEventListener('click', () => {
-      localStorage.setItem('v26_api_url', apiBase());
-      setStatus('warn', 'API salva');
-    }); 
+  const cleanUrl = apiBase();
+  apiInput.value = cleanUrl;
+  localStorage.setItem('v26_api_url', cleanUrl);
+  setStatus('warn', 'API salva');
+    });
     $('testApi').addEventListener('click', async () => {
   try {
     await request('/health');
