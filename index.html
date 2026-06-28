@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.2</title>
+  <title>V26 Web v1.4</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -125,6 +125,26 @@
     .small { font-size: 12px; }
     .footer-note { color: var(--muted); font-size: 12px; padding: 18px 0 4px; text-align: center; }
     .context-note { margin-top: 8px; }
+    .info-box {
+      margin-top: 10px;
+      color: #dbeafe;
+      background: rgba(30,64,175,.18);
+      border: 1px solid rgba(59,130,246,.25);
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .split-note {
+      color: #fde68a;
+      background: rgba(120,53,15,.18);
+      border: 1px solid rgba(245,158,11,.24);
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 10px;
+    }
     @media (max-width: 860px) {
       .grid { grid-template-columns: 1fr; }
       .row, .row-3 { grid-template-columns: 1fr; }
@@ -140,7 +160,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.2</h1>
+          <h1>V26 Web v1.4</h1>
           <div class="subtitle">Interface Safari para conversar com a V26 Core API</div>
         </div>
       </div>
@@ -202,12 +222,27 @@
         </div>
         <label for="oddsText">Odds Pinnacle</label>
         <textarea id="oddsText" placeholder="Cole aqui as odds..."></textarea>
-        <label for="contextText">Estatísticas / contexto</label>
-        <textarea id="contextText" placeholder="Cole contexto pré-live/live. O botão abaixo pode preencher um contexto assistido para revisão."></textarea>
+        <label for="contextText">Contexto manual / leitura mestre</label>
+        <textarea id="contextText" placeholder="Cole ou escreva aqui a leitura principal: motivação, favorito/azarão, forma, mando/fora, desfalques, ataque/defesa, ritmo, mercado e risco. Este campo prevalece sobre dados automáticos."></textarea>
+
+        <label for="newsText">Notícias / desfalques / motivação</label>
+        <textarea id="newsText" placeholder="Opcional: escalações prováveis, técnico demitido, suspensão, lesão, notícia local, necessidade de resultado, tabela."></textarea>
+
+        <label for="auxContextText">Dados auxiliares automáticos</label>
+        <textarea id="auxContextText" placeholder="O botão abaixo preenche dados auxiliares. Eles NÃO substituem o contexto manual."></textarea>
+
         <div class="actions">
-          <button id="contextBtn" class="good">Buscar contexto automaticamente</button>
+          <button id="contextBtn" class="good">Buscar dados auxiliares</button>
+          <button id="buildMasterBtn" class="warn">Consolidar Contexto Mestre</button>
         </div>
-        <div id="contextInfo" class="muted small context-note">Contexto automático assistido: revise antes de rodar a V26.</div>
+        <div id="contextInfo" class="muted small context-note">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</div>
+
+        <label for="finalContextText">Contexto Mestre final enviado à V26</label>
+        <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
+        <div class="split-note">
+          Regra v1.4: fonte automática não manda na análise. Se divergir do contexto manual, prevalece a leitura mestre validada.
+        </div>
+
         <div class="actions">
           <button id="analyzeBtn" class="primary">Rodar V26 Core</button>
           <button id="parseBtn">Testar parser</button>
@@ -221,7 +256,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v1 — interface simples. A decisão final continua humana.</div>
+    <div class="footer-note">V26 Web v1.4 — Contexto Mestre. A decisão final continua humana.</div>
   </main>
 
   <script>
@@ -286,7 +321,7 @@
         competition: $('competition').value.trim(),
         mode: $('mode').value,
         odds_text: $('oddsText').value,
-        context: $('contextText').value
+        context: (($('finalContextText') && $('finalContextText').value.trim()) || $('contextText').value)
       };
     }
     function contextPayload() {
@@ -356,7 +391,10 @@
       $('mode').value = s.mode;
       $('oddsText').value = s.oddsText;
       $('contextText').value = s.contextText;
-      $('contextInfo').innerHTML = '<span class="muted">Contexto do benchmark preenchido. Revise antes de rodar a V26.</span>';
+      if ($('newsText')) $('newsText').value = '';
+      if ($('auxContextText')) $('auxContextText').value = '';
+      if ($('finalContextText')) $('finalContextText').value = '';
+      $('contextInfo').innerHTML = '<span class="muted">Contexto do benchmark preenchido como leitura mestre. Revise e consolide antes de rodar a V26.</span>';
       $('resultBox').innerHTML = '<span class="muted">Benchmark preenchido. Toque em Rodar V26 Core.</span>';
     }));
     $('saveApi').addEventListener('click', () => {
@@ -377,20 +415,60 @@
       const info = $('contextInfo');
       const btn = $('contextBtn');
       btn.disabled = true;
-      info.innerHTML = '<span class="muted">Buscando contexto assistido...</span>';
+      info.innerHTML = '<span class="muted">Buscando dados auxiliares...</span>';
       try {
         const data = await request('/context/search', { method: 'POST', body: JSON.stringify(contextPayload()) });
-        $('contextText').value = data.context_text || '';
+        if ($('auxContextText')) $('auxContextText').value = data.context_text || '';
         const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        info.innerHTML = `<div class="success">Contexto carregado · Fonte: ${data.source || '—'} · Confiança da fonte: ${data.source_confidence || '—'} · Revisão manual necessária.${warningText}</div>`;
-        setStatus('ok', 'Contexto carregado');
+        info.innerHTML = `<div class="success">Dados auxiliares carregados · Fonte: ${data.source || '—'} · Confiança da fonte: ${data.source_confidence || '—'} · Não substitui contexto manual.${warningText}</div>`;
+        setStatus('ok', 'Dados auxiliares carregados');
       } catch (err) {
-        info.innerHTML = `<div class="error">Erro ao buscar contexto: ${err.message || err}</div>`;
+        info.innerHTML = `<div class="error">Erro ao buscar dados auxiliares: ${err.message || err}</div>`;
         setStatus('err', 'Erro ao buscar contexto');
       } finally {
         btn.disabled = false;
       }
     });
+
+    function buildMasterContext() {
+      const home = $('homeTeam').value.trim();
+      const away = $('awayTeam').value.trim();
+      const comp = $('competition').value.trim();
+      const mode = $('mode').value;
+      const odds = $('oddsText').value.trim();
+      const manual = $('contextText').value.trim();
+      const news = $('newsText') ? $('newsText').value.trim() : '';
+      const aux = $('auxContextText') ? $('auxContextText').value.trim() : '';
+
+      const parts = [];
+      parts.push(`CONTEXTO MESTRE V26 — ${home} x ${away}${comp ? ' · ' + comp : ''} · ${mode}`);
+      parts.push('REGRA DE PRIORIDADE: contexto manual/leitura real/odds atuais prevalecem sobre dados auxiliares automáticos. Se houver divergência, ignorar dado auxiliar fraco e manter a leitura mestre.');
+      if (odds) parts.push(`ODDS/LINHAS INFORMADAS:\n${odds}`);
+      if (manual) {
+        parts.push(`LEITURA MESTRE MANUAL:\n${manual}`);
+      } else {
+        parts.push('LEITURA MESTRE MANUAL: não preenchida. Contexto insuficiente para classificação premium sem revisão humana.');
+      }
+      if (news) parts.push(`NOTÍCIAS, DESFALQUES E MOTIVAÇÃO:\n${news}`);
+      if (aux) {
+        parts.push(`DADOS AUXILIARES AUTOMÁTICOS — USO SECUNDÁRIO:\n${aux}\nObservação: esses dados servem apenas como apoio. Não devem virar narrativa dominante sem confirmação por notícias, estatísticas reais, odds e leitura humana.`);
+      }
+      parts.push(`CHECKLIST V26 PARA FILTRAGEM:
+- Favorito x azarão: confirmar se o mercado precificou nome ou momento real.
+- Necessidade de resultado/motivação: confirmar tabela, mando, fase e urgência.
+- Forma recente: avaliar qualidade dos adversários, não só sequência bruta.
+- Ataque/defesa: verificar produção ofensiva, fragilidade defensiva e ritmo provável.
+- Desfalques/escalação/técnico: dar peso alto a notícias confirmadas.
+- Mercado/odd: comparar linha disponível com a narrativa; não forçar aposta.
+- Risco escondido: se informação for fraca, reduzir classe/stake.
+- Decisão: V26 classifica; IA/dados externos apenas organizam contexto.`);
+
+      $('finalContextText').value = parts.join('\\n\\n');
+      $('contextInfo').innerHTML = '<div class="success">Contexto Mestre consolidado. Revise o texto final antes de rodar a V26 Core.</div>';
+      setStatus('ok', 'Contexto Mestre pronto');
+    }
+
+    if ($('buildMasterBtn')) $('buildMasterBtn').addEventListener('click', buildMasterContext);
     $('parseBtn').addEventListener('click', async () => {
       try { const data = await request('/parse', { method: 'POST', body: JSON.stringify({ odds_text: $('oddsText').value }) }); setStatus('ok', 'Parser ok'); renderParse(data); }
       catch (err) { renderError(err); }
@@ -414,9 +492,9 @@
       } catch (err) { box.innerHTML = `<div class="error" style="margin-top:12px;">${err.message}</div>`; setStatus('err', 'Erro'); }
     });
     $('clearBtn').addEventListener('click', () => {
-      ['homeTeam','awayTeam','competition','oddsText','contextText'].forEach(id => $(id).value = '');
+      ['homeTeam','awayTeam','competition','oddsText','contextText','newsText','auxContextText','finalContextText'].forEach(id => { if ($(id)) $(id).value = ''; });
       $('mode').value = 'pre_live';
-      $('contextInfo').innerHTML = '<span class="muted">Contexto automático assistido: revise antes de rodar a V26.</span>';
+      $('contextInfo').innerHTML = '<span class="muted">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</span>';
       $('resultBox').innerHTML = '<span class="muted">Nenhuma análise rodada ainda.</span>';
     });
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
