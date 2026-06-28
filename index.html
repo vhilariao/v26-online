@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1</title>
+  <title>V26 Web v1.1</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -129,7 +129,7 @@
       .row, .row-3 { grid-template-columns: 1fr; }
       .metrics { grid-template-columns: repeat(2, 1fr); }
       .header-inner { align-items: flex-start; }
-      .status { display: none; }
+      .status { display: inline-flex; margin-top: 8px; }
     }
   </style>
 </head>
@@ -139,7 +139,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1</h1>
+          <h1>V26 Web v1.1</h1>
           <div class="subtitle">Interface Safari para conversar com a V26 Core API</div>
         </div>
       </div>
@@ -158,7 +158,6 @@
           <button id="testApi">Testar conexão</button>
           <button id="runBench" class="warn">Rodar benchmarks</button>
         </div>
-        <div id="apiTestResult" class="notice"></div>
         <div id="benchmarksBox"></div>
       </section>
 
@@ -223,7 +222,7 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const apiInput = $('apiUrl');
-    const storedApi = localStorage.getItem('v26_api_url') || 'http://127.0.0.1:8000';
+    const storedApi = localStorage.getItem('v26_api_url') || 'https://v26-core-api-2.onrender.com';
     apiInput.value = storedApi;
 
     const samples = {
@@ -256,12 +255,18 @@
       dot.className = 'dot' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
       box.querySelector('span:last-child').textContent = text;
     }
+    function moneyBR(value) {
+      if (value === null || value === undefined || value === '') return '—';
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+      return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
     async function request(path, options = {}) {
       const base = apiBase();
       if (!base) throw new Error('Informe a URL da API.');
       const res = await fetch(base + path, {
         ...options,
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(options.headers || {}) }
       });
       if (!res.ok) {
         const text = await res.text();
@@ -295,7 +300,7 @@
           <td>${ev.ic}</td>
           <td>${ev.confidence}%</td>
           <td>${ev.risk}%</td>
-          <td>${ev.stake_units}u</td>
+          <td>${moneyBR(ev.stake_units)}</td>
         </tr>
       `).join('');
       $('resultBox').innerHTML = `
@@ -309,14 +314,14 @@
             <div class="metric"><b>${b.ic}/100</b><span>IC</span></div>
             <div class="metric"><b>${b.confidence}%</b><span>Confidence</span></div>
             <div class="metric"><b>${b.risk}%</b><span>Risk</span></div>
-            <div class="metric"><b>${b.stake_units}u</b><span>Stake</span></div>
+            <div class="metric"><b>${moneyBR(b.stake_units)}</b><span>Stake sugerida</span></div>
           </div>
         </div>
         <h2 style="margin-top:16px;">Narrativa</h2>
         <p class="muted">${data.narrative || 'Sem narrativa.'}</p>
         ${(data.alerts && data.alerts.length) ? `<h2>Alertas</h2><ul>${data.alerts.map(a=>`<li>${a}</li>`).join('')}</ul>` : ''}
         <h2>Ranking de mercados</h2>
-        <table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risk</th><th>Stake</th></tr></thead><tbody>${rows}</tbody></table>
+        <table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risk</th><th>Stake sugerida</th></tr></thead><tbody>${rows}</tbody></table>
       `;
     }
     function renderParse(data) {
@@ -337,72 +342,41 @@
       $('contextText').value = s.contextText;
       $('resultBox').innerHTML = '<span class="muted">Benchmark preenchido. Toque em Rodar V26 Core.</span>';
     }));
-   $('saveApi').addEventListener('click', () => {
-  const cleanUrl = apiBase();
-  apiInput.value = cleanUrl;
-  localStorage.setItem('v26_api_url', cleanUrl);
-  setStatus('warn', 'API salva');
-});
-
-$('testApi').addEventListener('click', async () => {
-  const base = apiBase();
-
-  if (!base) {
-    setStatus('err', 'Informe a URL da API');
-    return;
-  }
-
-  try {
-    const res = await fetch(`${base}/health`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
+    $('saveApi').addEventListener('click', () => {
+      const cleanUrl = apiBase();
+      apiInput.value = cleanUrl;
+      localStorage.setItem('v26_api_url', cleanUrl);
+      setStatus('warn', 'API salva');
     });
-
-    if (!res.ok) {
-      throw new Error(`Erro ${res.status}`);
-    }
-
-    setStatus('ok', 'Conexão OK com a V26 Core API');
-  } catch (err) {
-    setStatus('err', `Erro ao conectar: ${err.message}`);
-  }
-});
-
-$('runBench').addEventListener('click', async () => {
-  const box = $('benchmarksBox');
-  const base = apiBase();
-
-  if (!base) {
-    setStatus('err', 'Informe a URL da API');
-    return;
-  }
-
-  box.innerHTML = '<p class="muted small">Rodando benchmarks...</p>';
-
-  try {
-    const res = await fetch(`${base}/benchmarks/run`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
+    $('testApi').addEventListener('click', async () => {
+      try {
+        const data = await request('/health');
+        setStatus('ok', `Conexão OK com a V26 Core API · ${data.version || ''}`);
+      } catch (err) {
+        setStatus('err', `Erro ao conectar com a API: ${err.message || err}`);
+      }
     });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Erro ${res.status}: ${text}`);
-    }
-
-    const data = await res.json();
-
-    const pre = document.createElement('pre');
-    pre.textContent = JSON.stringify(data, null, 2);
-
-    box.innerHTML = '';
-    box.appendChild(pre);
-
-    setStatus(data.passed ? 'ok' : 'err', data.passed ? 'Benchmarks OK' : 'Benchmarks com erro');
-  } catch (err) {
-    box.innerHTML = `<div class="error">${err.message}</div>`;
-    setStatus('err', 'Erro ao rodar benchmarks');
-  }
+    $('parseBtn').addEventListener('click', async () => {
+      try { const data = await request('/parse', { method: 'POST', body: JSON.stringify({ odds_text: $('oddsText').value }) }); setStatus('ok', 'Parser ok'); renderParse(data); }
+      catch (err) { renderError(err); }
+    });
+    $('analyzeBtn').addEventListener('click', async () => {
+      try {
+        $('resultBox').innerHTML = '<span class="muted">Rodando V26 Core...</span>';
+        const data = await request('/analyze', { method: 'POST', body: JSON.stringify(payload()) });
+        setStatus('ok', 'Análise ok');
+        renderResult(data);
+      } catch (err) { renderError(err); }
+    });
+    $('runBench').addEventListener('click', async () => {
+      const box = $('benchmarksBox');
+      box.innerHTML = '<p class="muted small">Rodando benchmarks...</p>';
+      try {
+        const data = await request('/benchmarks/run');
+        const cls = data.passed ? 'success' : 'error';
+        box.innerHTML = `<div class="${cls}" style="margin-top:12px;">${data.passed_count}/${data.total} benchmarks passaram.</div><div class="bench-list">${data.cases.map(c=>`<div class="bench-item"><div><b>${c.id}</b><div class="muted small">${c.name}<br>${c.actual_best_market} · ${c.actual_class}</div></div><div>${c.passed ? '✅' : '❌'}</div></div>`).join('')}</div>`;
+        setStatus(data.passed ? 'ok' : 'err', data.passed ? 'Benchmarks ok' : 'Benchmark falhou');
+      } catch (err) { box.innerHTML = `<div class="error" style="margin-top:12px;">${err.message}</div>`; setStatus('err', 'Erro'); }
     });
     $('clearBtn').addEventListener('click', () => {
       ['homeTeam','awayTeam','competition','oddsText','contextText'].forEach(id => $(id).value = '');
