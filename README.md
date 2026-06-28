@@ -1,10 +1,8 @@
-# V26 Web v1.8 — Varredura Web Tavily
+# V26 Web v1.8.1 — Interface limpa
 
 Mudanças:
-- Novo botão: Varredura Web v1.8.
-- Chama `/context/scan-web`.
-- Com `TAVILY_API_KEY` no Render, executa busca web real.
-- Converte resultados em blocos ponderados.
-- Atualiza Contexto Mestre.
-- Sem chave, retorna setup_required com buscas manuais sugeridas.
+- Remove excesso visual da v1.7/v1.8.
+- Botão principal: Gerar Contexto IA.
+- Ferramentas técnicas ficam escondidas em "Ferramentas técnicas / auditoria avançada".
+- A API continua responsável por varredura, blocos, pesos e Contexto Mestre.
 - V26 Core continua como decisão final.

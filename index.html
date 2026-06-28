@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.8</title>
+  <title>V26 Web v1.8.1</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -162,6 +162,29 @@
     .scan-link b { color: #e0f2fe; }
     .scan-link span { display: block; color: var(--muted); margin-top: 3px; }
 
+
+    details.advanced {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(9,15,29,.45);
+    }
+    details.advanced summary {
+      cursor: pointer;
+      color: #cbd5e1;
+      font-weight: 700;
+      list-style: none;
+    }
+    details.advanced summary::-webkit-details-marker { display: none; }
+    details.advanced summary::after {
+      content: " abrir";
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 12px;
+    }
+    details.advanced[open] summary::after { content: " fechar"; }
+
     .split-note {
       color: #fde68a;
       background: rgba(120,53,15,.18);
@@ -187,8 +210,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.8</h1>
-          <div class="subtitle">Varredura Web + Coleta por Blocos + V26 Core</div>
+          <h1>V26 Web v1.8.1</h1>
+          <div class="subtitle">Interface limpa + Varredura IA + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -255,30 +278,37 @@
         <label for="newsText">Notícias / desfalques / motivação</label>
         <textarea id="newsText" placeholder="Opcional: escalações prováveis, técnico demitido, suspensão, lesão, notícia local, necessidade de resultado, tabela."></textarea>
 
-        <label for="auxContextText">Dados auxiliares automáticos</label>
-        <textarea id="auxContextText" placeholder="O botão abaixo preenche dados auxiliares. Eles NÃO substituem o contexto manual."></textarea>
-
         <div class="actions">
-          <button id="contextBtn" class="good">Buscar dados auxiliares</button>
-          <button id="scanBtn" class="primary">Varredura IA v1.8</button>
-          <button id="webScanBtn" class="good">Varredura Web v1.8</button>
-          <button id="weightsBtn">Ver pesos</button>
-          <button id="buildMasterBtn" class="warn">Consolidar Contexto Mestre</button>
+          <button id="webScanBtn" class="good">Gerar Contexto IA</button>
         </div>
-        <div id="contextInfo" class="muted small context-note">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</div>
+        <div id="contextInfo" class="muted small context-note">A API faz a varredura técnica. Você revisa o Contexto Mestre antes de rodar a V26.</div>
         <div id="scanBox"></div>
 
-        <label for="sourceBlocksText">Coleta por blocos v1.7</label>
-        <textarea id="sourceBlocksText" placeholder="Uma linha por achado. Formato: fonte | tipo | confirmado? | impacto | texto&#10;Ex: ESPN | desfalque_confirmado | sim | under | Avaí sem atacante titular, reduz força ofensiva.&#10;Ex: Academia | prognostico | não | under | Prévia aponta jogo equilibrado e baixo ritmo."></textarea>
-        <div class="actions">
-          <button id="blocksTemplateBtn">Modelo de blocos</button>
-          <button id="blocksAnalyzeBtn" class="good">Analisar blocos v1.7</button>
-        </div>
+        <details class="advanced">
+          <summary>Ferramentas técnicas / auditoria avançada</summary>
+
+          <label for="auxContextText">Dados auxiliares automáticos</label>
+          <textarea id="auxContextText" placeholder="Área técnica preenchida pela API. Não substitui contexto manual."></textarea>
+
+          <div class="actions">
+            <button id="contextBtn" class="good">Buscar dados auxiliares</button>
+            <button id="scanBtn" class="primary">Varredura guiada</button>
+            <button id="weightsBtn">Ver pesos</button>
+            <button id="buildMasterBtn" class="warn">Consolidar manualmente</button>
+          </div>
+
+          <label for="sourceBlocksText">Coleta por blocos</label>
+          <textarea id="sourceBlocksText" placeholder="Área técnica. Formato: fonte | tipo | confirmado? | impacto | texto"></textarea>
+          <div class="actions">
+            <button id="blocksTemplateBtn">Modelo de blocos</button>
+            <button id="blocksAnalyzeBtn" class="good">Analisar blocos</button>
+          </div>
+        </details>
 
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v1.8: varredura web coleta achados, converte em blocos ponderados e V26 decide. Requer Tavily API para busca real. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v1.8.1: a interface mostra só o essencial. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -294,7 +324,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v1.4 — Contexto Mestre. A decisão final continua humana.</div>
+    <div class="footer-note">V26 Web v1.8.1 — Interface limpa. API faz a parte técnica; V26 decide.</div>
   </main>
 
   <script>
@@ -528,7 +558,7 @@
 
       $('scanBox').innerHTML = `
         <div class="scan-box">
-          <b>${setup ? 'Configuração necessária' : 'Varredura Web v1.8 concluída'} · Confiança ${data.source_confidence || '—'} · Teto ${data.context_cap || '—'}</b>
+          <b>${setup ? 'Configuração necessária' : 'Contexto IA concluída'} · Confiança ${data.source_confidence || '—'} · Teto ${data.context_cap || '—'}</b>
           <div class="muted" style="margin-top:6px;">
             ${setup ? 'Adicione TAVILY_API_KEY no Render para ativar a busca automática real.' : 'Resultados web convertidos em blocos ponderados. Revise antes de rodar a V26.'}
           </div>
@@ -541,7 +571,7 @@
       const info = $('contextInfo');
       const btn = $('webScanBtn');
       btn.disabled = true;
-      info.innerHTML = '<span class="muted">Executando varredura web v1.8...</span>';
+      info.innerHTML = '<span class="muted">Gerando Contexto IA...</span>';
       try {
         const data = await request('/context/scan-web', { method: 'POST', body: JSON.stringify(webScanPayload()) });
         if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
@@ -554,14 +584,14 @@
         renderWebScan(data);
         const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
         if (data.status === 'setup_required') {
-          info.innerHTML = `<div class="warn">Varredura Web v1.8 instalada, mas precisa da chave TAVILY_API_KEY no Render.${warningText}</div>`;
+          info.innerHTML = `<div class="warn">Contexto IA instalada, mas precisa da chave TAVILY_API_KEY no Render.${warningText}</div>`;
           setStatus('warn', 'Tavily pendente');
         } else {
-          info.innerHTML = `<div class="success">Varredura Web v1.8 executada. Contexto Mestre atualizado.${warningText}</div>`;
+          info.innerHTML = `<div class="success">Contexto IA executada. Contexto Mestre atualizado.${warningText}</div>`;
           setStatus('ok', 'Web scan ok');
         }
       } catch (err) {
-        info.innerHTML = `<div class="error">Erro na varredura web: ${err.message || err}</div>`;
+        info.innerHTML = `<div class="error">Erro ao gerar Contexto IA: ${err.message || err}</div>`;
         setStatus('err', 'Erro web scan');
       } finally {
         btn.disabled = false;
