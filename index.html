@@ -337,17 +337,18 @@
       $('contextText').value = s.contextText;
       $('resultBox').innerHTML = '<span class="muted">Benchmark preenchido. Toque em Rodar V26 Core.</span>';
     }));
-    $('saveApi').addEventListener('click', () => {
+   $('saveApi').addEventListener('click', () => {
   const cleanUrl = apiBase();
   apiInput.value = cleanUrl;
   localStorage.setItem('v26_api_url', cleanUrl);
   setStatus('warn', 'API salva');
-    });
-   $('testApi').addEventListener('click', async () => {
+});
+
+$('testApi').addEventListener('click', async () => {
   const base = apiBase();
 
   if (!base) {
-    setStatus('bad', 'Informe a URL da API');
+    setStatus('err', 'Informe a URL da API');
     return;
   }
 
@@ -363,30 +364,45 @@
 
     setStatus('ok', 'Conexão OK com a V26 Core API');
   } catch (err) {
-    setStatus('bad', `Erro ao conectar: ${err.message}`);
+    setStatus('err', `Erro ao conectar: ${err.message}`);
   }
 });
-    $('parseBtn').addEventListener('click', async () => {
-      try { const data = await request('/parse', { method: 'POST', body: JSON.stringify({ odds_text: $('oddsText').value }) }); setStatus('ok', 'Parser ok'); renderParse(data); }
-      catch (err) { renderError(err); }
+
+$('runBench').addEventListener('click', async () => {
+  const box = $('benchmarksBox');
+  const base = apiBase();
+
+  if (!base) {
+    setStatus('err', 'Informe a URL da API');
+    return;
+  }
+
+  box.innerHTML = '<p class="muted small">Rodando benchmarks...</p>';
+
+  try {
+    const res = await fetch(`${base}/benchmarks/run`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
     });
-    $('analyzeBtn').addEventListener('click', async () => {
-      try {
-        $('resultBox').innerHTML = '<span class="muted">Rodando V26 Core...</span>';
-        const data = await request('/analyze', { method: 'POST', body: JSON.stringify(payload()) });
-        setStatus('ok', 'Análise ok');
-        renderResult(data);
-      } catch (err) { renderError(err); }
-    });
-    $('runBench').addEventListener('click', async () => {
-      const box = $('benchmarksBox');
-      box.innerHTML = '<p class="muted small">Rodando benchmarks...</p>';
-      try {
-        const data = await request('/benchmarks/run');
-        const cls = data.passed ? 'success' : 'error';
-        box.innerHTML = `<div class="${cls}" style="margin-top:12px;">${data.passed_count}/${data.total} benchmarks passaram.</div><div class="bench-list">${data.cases.map(c=>`<div class="bench-item"><div><b>${c.id}</b><div class="muted small">${c.name}<br>${c.actual_best_market} · ${c.actual_class}</div></div><div>${c.passed ? '✅' : '❌'}</div></div>`).join('')}</div>`;
-        setStatus(data.passed ? 'ok' : 'err', data.passed ? 'Benchmarks ok' : 'Benchmark falhou');
-      } catch (err) { box.innerHTML = `<div class="error" style="margin-top:12px;">${err.message}</div>`; setStatus('err', 'Erro'); }
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Erro ${res.status}: ${text}`);
+    }
+
+    const data = await res.json();
+
+    const pre = document.createElement('pre');
+    pre.textContent = JSON.stringify(data, null, 2);
+
+    box.innerHTML = '';
+    box.appendChild(pre);
+
+    setStatus(data.passed ? 'ok' : 'err', data.passed ? 'Benchmarks OK' : 'Benchmarks com erro');
+  } catch (err) {
+    box.innerHTML = `<div class="error">${err.message}</div>`;
+    setStatus('err', 'Erro ao rodar benchmarks');
+  }
     });
     $('clearBtn').addEventListener('click', () => {
       ['homeTeam','awayTeam','competition','oddsText','contextText'].forEach(id => $(id).value = '');
