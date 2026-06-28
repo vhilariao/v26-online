@@ -343,12 +343,27 @@
   localStorage.setItem('v26_api_url', cleanUrl);
   setStatus('warn', 'API salva');
     });
-    $('testApi').addEventListener('click', async () => {
+   $('testApi').addEventListener('click', async () => {
+  const base = apiBase();
+
+  if (!base) {
+    setStatus('bad', 'Informe a URL da API');
+    return;
+  }
+
   try {
-    await request('/health');
+    const res = await fetch(`${base}/health`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro ${res.status}`);
+    }
+
     setStatus('ok', 'Conexão OK com a V26 Core API');
   } catch (err) {
-    setStatus('bad', 'Erro ao conectar com a API');
+    setStatus('bad', `Erro ao conectar: ${err.message}`);
   }
 });
     $('parseBtn').addEventListener('click', async () => {
