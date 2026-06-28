@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <title>V26 Web v1</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel2: #172036;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #263248;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --blue: #38bdf8;
+      --purple: #a78bfa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top, #16213f 0, var(--bg) 52%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 14px 16px;
+      background: rgba(11, 16, 32, 0.86);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: linear-gradient(135deg, #38bdf8, #a78bfa);
+      display: grid; place-items: center;
+      font-weight: 900; color: #07101f;
+    }
+    h1 { font-size: 18px; line-height: 1.1; margin: 0; }
+    .subtitle { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .status {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 6px 10px; background: rgba(17,24,39,.7);
+      white-space: nowrap;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
+    .dot.ok { background: var(--green); }
+    .dot.err { background: var(--red); }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(0,0,0,.22);
+    }
+    .card h2 { font-size: 15px; margin: 0 0 12px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--border); background: #090f1d;
+      color: var(--text); border-radius: 12px; padding: 11px 12px;
+      font: inherit; outline: none;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    button {
+      border: 0; border-radius: 12px; padding: 11px 12px;
+      background: #263248; color: var(--text); font-weight: 700;
+      cursor: pointer; min-height: 44px;
+    }
+    button.primary { background: linear-gradient(135deg, #38bdf8, #a78bfa); color: #07101f; }
+    button.good { background: #164b2a; color: #bff7cf; }
+    button.warn { background: #4a3211; color: #ffdf9b; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px; font-size: 12px;
+      border: 1px solid var(--border); background: #0b1224; color: var(--muted);
+    }
+    .result-hero {
+      background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(167,139,250,.14));
+      border: 1px solid rgba(56,189,248,.25);
+      padding: 14px; border-radius: 16px; margin-top: 10px;
+    }
+    .market { font-size: 18px; font-weight: 900; margin: 0 0 8px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .metric { background: rgba(9,15,29,.82); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+    .metric b { display: block; font-size: 17px; }
+    .metric span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .class-A, .class-A\+ { color: var(--green); }
+    .class-B\+ { color: var(--yellow); }
+    .class-B { color: #fde68a; }
+    .class-C, .class-D { color: #fca5a5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th, td { text-align: left; border-bottom: 1px solid var(--border); padding: 9px 6px; vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .muted { color: var(--muted); }
+    .error { color: #fecaca; background: rgba(127,29,29,.28); border: 1px solid rgba(248,113,113,.25); padding: 10px; border-radius: 12px; }
+    .success { color: #bbf7d0; background: rgba(20,83,45,.28); border: 1px solid rgba(34,197,94,.25); padding: 10px; border-radius: 12px; }
+    .bench-list { display: grid; gap: 8px; margin-top: 10px; }
+    .bench-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; border: 1px solid var(--border); padding: 10px; border-radius: 12px; background: rgba(9,15,29,.72); }
+    .small { font-size: 12px; }
+    .footer-note { color: var(--muted); font-size: 12px; padding: 18px 0 4px; text-align: center; }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .row, .row-3 { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .header-inner { align-items: flex-start; }
+      .status { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo">V26</div>
+        <div>
+          <h1>V26 Web v1</h1>
+          <div class="subtitle">Interface Safari para conversar com a V26 Core API</div>
+        </div>
+      </div>
+      <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section class="card">
+        <h2>1. Conexão da API</h2>
+        <label for="apiUrl">URL da V26 Core API</label>
+        <input id="apiUrl" placeholder="https://sua-api.onrender.com" />
+        <div class="actions">
+          <button id="saveApi" class="good">Salvar API</button>
+          <button id="testApi">Testar conexão</button>
+          <button id="runBench" class="warn">Rodar benchmarks</button>
+        </div>
+        <div id="benchmarksBox"></div>
+      </section>
+
+      <section class="card">
+        <h2>2. Benchmarks rápidos</h2>
+        <div class="actions">
+          <button data-sample="criciuma">Criciúma</button>
+          <button data-sample="operario">Operário</button>
+          <button data-sample="novo">Novorizontino</button>
+          <button data-sample="avai">Athletic x Avaí</button>
+        </div>
+        <p class="muted small">Use para validar se a API está respondendo igual aos casos oficiais da V26.</p>
+      </section>
+    </div>
+
+    <div class="grid" style="margin-top:16px;">
+      <section class="card">
+        <h2>3. Nova análise</h2>
+        <div class="row">
+          <div>
+            <label for="homeTeam">Mandante</label>
+            <input id="homeTeam" placeholder="Athletic" />
+          </div>
+          <div>
+            <label for="awayTeam">Visitante</label>
+            <input id="awayTeam" placeholder="Avaí" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="competition">Competição</label>
+            <input id="competition" placeholder="Brasil Série B" />
+          </div>
+          <div>
+            <label for="mode">Modo</label>
+            <select id="mode">
+              <option value="pre_live">Pré-live</option>
+              <option value="live">Live</option>
+            </select>
+          </div>
+        </div>
+        <label for="oddsText">Odds Pinnacle</label>
+        <textarea id="oddsText" placeholder="Cole aqui as odds..."></textarea>
+        <label for="contextText">Estatísticas / contexto</label>
+        <textarea id="contextText" placeholder="Cole contexto pré-live/live. Na versão final, isso será preenchido por providers/API."></textarea>
+        <div class="actions">
+          <button id="analyzeBtn" class="primary">Rodar V26 Core</button>
+          <button id="parseBtn">Testar parser</button>
+          <button id="clearBtn">Limpar</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>4. Resultado</h2>
+        <div id="resultBox" class="muted">Nenhuma análise rodada ainda.</div>
+      </section>
+    </div>
+
+    <div class="footer-note">V26 Web v1 — interface simples. A decisão final continua humana.</div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const apiInput = $('apiUrl');
+    const storedApi = localStorage.getItem('v26_api_url') || 'http://127.0.0.1:8000';
+    apiInput.value = storedApi;
+
+    const samples = {
+      criciuma: {
+        homeTeam: 'América-MG', awayTeam: 'Criciúma', competition: 'Brasil Série B', mode: 'pre_live',
+        oddsText: 'Criciúma Mais de 0.5 HT @1.917\nCriciúma -0.25 @2.000\nAmérica MG +0.25 @1.900\nOver 2.5 @2.100\nUnder 2.5 @1.750\nOver 9 @2.230\nUnder 9 @1.606',
+        contextText: 'Brasil Série B. Criciúma tinha valor ofensivo cedo, com pressão inicial e volume ofensivo no primeiro tempo. América-MG em casa era ressalva, por isso o mercado mais limpo era Criciúma marcar mais de 0.5 gol HT, sem exigir resultado final. Handicap Criciúma -0.25 é alternativa, mas não representa tão bem a narrativa quanto o Team Goals HT.'
+      },
+      operario: {
+        homeTeam: 'Operário Ferroviário', awayTeam: 'América Mineiro', competition: 'Brasil Série B', mode: 'pre_live',
+        oddsText: 'Operário 0.0 @1.900\nAmérica Mineiro 0.0 @1.950\nUnder 2.25 @1.892\nOver 2.25 @1.970',
+        contextText: 'Brasil Série B. Jogo com tendência de equilíbrio, baixa projeção ofensiva, ritmo esperado mais controlado, poucos sinais de jogo aberto, mercado de gols ajustado mas Under 2.25 ainda pagando bem. Linha 2.25 oferece proteção parcial em caso de exatamente 2 gols.'
+      },
+      novo: {
+        homeTeam: 'Novorizontino', awayTeam: 'Vila Nova', competition: 'Brasil Série B', mode: 'live',
+        oddsText: 'Grêmio Novorizontino -0.25 @1.819\nVila Nova +0.25 @2.000\nOver 2.5 @2.150\nUnder 2.5 @1.700',
+        contextText: 'Live no intervalo / começo do segundo tempo. Novorizontino tinha superioridade/narrativa de favorito, volume ofensivo/pressão e domínio estatístico sustentado. O mercado Novorizontino -0.25 ainda pagava 1.819 e representava melhor a leitura do que alternativas.'
+      },
+      avai: {
+        homeTeam: 'Athletic', awayTeam: 'Avaí', competition: 'Brasil Série B', mode: 'pre_live',
+        oddsText: 'Athletic @2.010\nEmpate @3.310\nAvaí @4.060\nAthletic -0.25 @1.724\nAvaí +0.25 @2.180\nUnder 2.5 @1.609\nUnder 2.25 @1.800\nUnder 2 @2.120\nOver 2.25 @2.070',
+        contextText: 'Brasil Série B. Athletic Club x Avaí. Jogo com tendência de equilíbrio e ritmo controlado. Athletic tem mando e leve favoritismo, mas chega com desfalques importantes e fase recente irregular. Avaí está em situação ruim e tem fragilidade fora de casa, mas vem de vitória recente. A leitura pré-live aponta jogo mais travado do que aberto, com Under 2.25 como mercado mais compatível, porém o preço já está mais ajustado do que em benchmarks anteriores. A linha 2.25 oferece proteção parcial em caso de exatamente 2 gols, mas a odd 1.800 não permite classificação premium sem confirmação adicional.'
+      }
+    };
+
+    function apiBase() { return apiInput.value.trim().replace(/\/$/, ''); }
+    function setStatus(kind, text) {
+      const box = $('apiStatus');
+      const dot = box.querySelector('.dot');
+      dot.className = 'dot' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
+      box.querySelector('span:last-child').textContent = text;
+    }
+    async function request(path, options = {}) {
+      const base = apiBase();
+      if (!base) throw new Error('Informe a URL da API.');
+      const res = await fetch(base + path, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Erro ${res.status}: ${text}`);
+      }
+      return res.json();
+    }
+    function payload() {
+      return {
+        home_team: $('homeTeam').value.trim(),
+        away_team: $('awayTeam').value.trim(),
+        competition: $('competition').value.trim(),
+        mode: $('mode').value,
+        odds_text: $('oddsText').value,
+        context: $('contextText').value
+      };
+    }
+    function classSpan(cls) {
+      return `<span class="class-${String(cls).replace('+','\\+')}" style="font-weight:900">${cls}</span>`;
+    }
+    function renderResult(data) {
+      const b = data.best;
+      const m = b.market;
+      const rows = (data.markets || []).map((ev, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${ev.market.name}</td>
+          <td>${Number(ev.market.odds).toFixed(3)}</td>
+          <td>${classSpan(ev.classification)}</td>
+          <td>${Number(ev.ev_percent).toFixed(1)}%</td>
+          <td>${ev.ic}</td>
+          <td>${ev.confidence}%</td>
+          <td>${ev.risk}%</td>
+          <td>${ev.stake_units}u</td>
+        </tr>
+      `).join('');
+      $('resultBox').innerHTML = `
+        <div class="result-hero">
+          <div class="pill">${data.match} · ${data.mode}</div>
+          <p class="market">${m.name}</p>
+          <div class="muted">Odd ${Number(m.odds).toFixed(3)} · ${m.market_type}</div>
+          <div class="metrics">
+            <div class="metric"><b>${classSpan(b.classification)}</b><span>Classe</span></div>
+            <div class="metric"><b>${Number(b.ev_percent).toFixed(1)}%</b><span>EV</span></div>
+            <div class="metric"><b>${b.ic}/100</b><span>IC</span></div>
+            <div class="metric"><b>${b.confidence}%</b><span>Confidence</span></div>
+            <div class="metric"><b>${b.risk}%</b><span>Risk</span></div>
+            <div class="metric"><b>${b.stake_units}u</b><span>Stake</span></div>
+          </div>
+        </div>
+        <h2 style="margin-top:16px;">Narrativa</h2>
+        <p class="muted">${data.narrative || 'Sem narrativa.'}</p>
+        ${(data.alerts && data.alerts.length) ? `<h2>Alertas</h2><ul>${data.alerts.map(a=>`<li>${a}</li>`).join('')}</ul>` : ''}
+        <h2>Ranking de mercados</h2>
+        <table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risk</th><th>Stake</th></tr></thead><tbody>${rows}</tbody></table>
+      `;
+    }
+    function renderParse(data) {
+      const rows = (data.markets || []).map((m, idx) => `<tr><td>${idx+1}</td><td>${m.name}</td><td>${m.odds}</td><td>${m.market_type}</td><td>${m.line ?? ''}</td><td>${m.period}</td></tr>`).join('');
+      $('resultBox').innerHTML = `<div class="success">Parser reconheceu ${data.recognized_markets} mercados.</div><table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Tipo</th><th>Linha</th><th>Período</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    function renderError(err) {
+      $('resultBox').innerHTML = `<div class="error">${err.message || err}</div>`;
+      setStatus('err', 'Erro');
+    }
+    document.querySelectorAll('[data-sample]').forEach(btn => btn.addEventListener('click', () => {
+      const s = samples[btn.dataset.sample];
+      $('homeTeam').value = s.homeTeam;
+      $('awayTeam').value = s.awayTeam;
+      $('competition').value = s.competition;
+      $('mode').value = s.mode;
+      $('oddsText').value = s.oddsText;
+      $('contextText').value = s.contextText;
+      $('resultBox').innerHTML = '<span class="muted">Benchmark preenchido. Toque em Rodar V26 Core.</span>';
+    }));
+    $('saveApi').addEventListener('click', () => {
+      localStorage.setItem('v26_api_url', apiBase());
+      setStatus('warn', 'API salva');
+    });
+    $('testApi').addEventListener('click', async () => {
+      try { const data = await request('/health'); setStatus('ok', `API ok · ${data.version || ''}`); }
+      catch (err) { renderError(err); }
+    });
+    $('parseBtn').addEventListener('click', async () => {
+      try { const data = await request('/parse', { method: 'POST', body: JSON.stringify({ odds_text: $('oddsText').value }) }); setStatus('ok', 'Parser ok'); renderParse(data); }
+      catch (err) { renderError(err); }
+    });
+    $('analyzeBtn').addEventListener('click', async () => {
+      try {
+        $('resultBox').innerHTML = '<span class="muted">Rodando V26 Core...</span>';
+        const data = await request('/analyze', { method: 'POST', body: JSON.stringify(payload()) });
+        setStatus('ok', 'Análise ok');
+        renderResult(data);
+      } catch (err) { renderError(err); }
+    });
+    $('runBench').addEventListener('click', async () => {
+      const box = $('benchmarksBox');
+      box.innerHTML = '<p class="muted small">Rodando benchmarks...</p>';
+      try {
+        const data = await request('/benchmarks/run');
+        const cls = data.passed ? 'success' : 'error';
+        box.innerHTML = `<div class="${cls}" style="margin-top:12px;">${data.passed_count}/${data.total} benchmarks passaram.</div><div class="bench-list">${data.cases.map(c=>`<div class="bench-item"><div><b>${c.id}</b><div class="muted small">${c.name}<br>${c.actual_best_market} · ${c.actual_class}</div></div><div>${c.passed ? '✅' : '❌'}</div></div>`).join('')}</div>`;
+        setStatus(data.passed ? 'ok' : 'err', data.passed ? 'Benchmarks ok' : 'Benchmark falhou');
+      } catch (err) { box.innerHTML = `<div class="error" style="margin-top:12px;">${err.message}</div>`; setStatus('err', 'Erro'); }
+    });
+    $('clearBtn').addEventListener('click', () => {
+      ['homeTeam','awayTeam','competition','oddsText','contextText'].forEach(id => $(id).value = '');
+      $('mode').value = 'pre_live';
+      $('resultBox').innerHTML = '<span class="muted">Nenhuma análise rodada ainda.</span>';
+    });
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
+  </script>
+</body>
+</html>
