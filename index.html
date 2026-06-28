@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.6</title>
+  <title>V26 Web v1.7</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -187,8 +187,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.6</h1>
-          <div class="subtitle">Matriz de Pesos + Varredura IA + V26 Core</div>
+          <h1>V26 Web v1.7</h1>
+          <div class="subtitle">Coleta por Blocos + Matriz de Pesos + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -260,17 +260,24 @@
 
         <div class="actions">
           <button id="contextBtn" class="good">Buscar dados auxiliares</button>
-          <button id="scanBtn" class="primary">Varredura IA v1.6</button>
+          <button id="scanBtn" class="primary">Varredura IA v1.7</button>
           <button id="weightsBtn">Ver pesos</button>
           <button id="buildMasterBtn" class="warn">Consolidar Contexto Mestre</button>
         </div>
         <div id="contextInfo" class="muted small context-note">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</div>
         <div id="scanBox"></div>
 
+        <label for="sourceBlocksText">Coleta por blocos v1.7</label>
+        <textarea id="sourceBlocksText" placeholder="Uma linha por achado. Formato: fonte | tipo | confirmado? | impacto | texto&#10;Ex: ESPN | desfalque_confirmado | sim | under | Avaí sem atacante titular, reduz força ofensiva.&#10;Ex: Academia | prognostico | não | under | Prévia aponta jogo equilibrado e baixo ritmo."></textarea>
+        <div class="actions">
+          <button id="blocksTemplateBtn">Modelo de blocos</button>
+          <button id="blocksAnalyzeBtn" class="good">Analisar blocos v1.7</button>
+        </div>
+
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v1.6: pesos das fontes medem força do contexto, mas não decidem aposta. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v1.7: achados por fonte viram blocos ponderados. Pesos medem força do contexto, não decidem aposta. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -468,13 +475,129 @@
       `).join('');
       $('scanBox').innerHTML = `
         <div class="scan-box">
-          <b>Varredura IA v1.6 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
+          <b>Varredura IA v1.7 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
           <div class="muted" style="margin-top:6px;">Foram gerados ${links.length} links/perguntas. Abra os principais, confirme notícias/desfalques e ajuste o Contexto Mestre antes de rodar a V26.</div>
           <div class="scan-links">${topLinks}</div>
         </div>
       `;
     }
 
+
+
+    const SOURCE_ALIASES = {
+      'espn': 'espn',
+      'ge': 'ge_globo',
+      'globo': 'ge_globo',
+      'globoesporte': 'ge_globo',
+      'ge/globo': 'ge_globo',
+      'jornal': 'local_news',
+      'local': 'local_news',
+      'noticia local': 'local_news',
+      'oficial': 'club_official',
+      'clube': 'club_official',
+      'pinnacle': 'pinnacle_market',
+      'odds': 'pinnacle_market',
+      'mercado': 'pinnacle_market',
+      'sofascore': 'sofascore_pre',
+      'sofascore live': 'sofascore_live',
+      'footystats': 'footystats',
+      'academia': 'academia',
+      'academia das apostas': 'academia',
+      'sportytrader': 'sportytrader',
+      'windrawwin': 'windrawwin',
+      'thesportsdb': 'thesportsdb'
+    };
+
+    function normKey(s) {
+      return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    }
+
+    function parseConfirmed(s) {
+      const v = normKey(s);
+      return ['sim','s','yes','y','confirmado','true','1'].includes(v);
+    }
+
+    function parseBlocksText() {
+      const text = $('sourceBlocksText') ? $('sourceBlocksText').value : '';
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      return lines.map(line => {
+        const parts = line.split('|').map(p => p.trim());
+        const sourceRaw = parts[0] || 'generic_preview';
+        return {
+          source_key: SOURCE_ALIASES[normKey(sourceRaw)] || normKey(sourceRaw).replace(/\s+/g, '_') || 'generic_preview',
+          info_type: parts[1] || '',
+          confirmed: parseConfirmed(parts[2] || ''),
+          impact: normKey(parts[3] || 'neutral').replace(/\s+/g, '_'),
+          text: parts.slice(4).join(' | ') || line
+        };
+      }).filter(b => b.text);
+    }
+
+    function blocksPayload() {
+      return {
+        home_team: $('homeTeam').value.trim(),
+        away_team: $('awayTeam').value.trim(),
+        competition: $('competition').value.trim(),
+        mode: $('mode').value,
+        odds_text: $('oddsText').value,
+        market_focus: '',
+        manual_context: $('contextText').value,
+        current_context_master: $('finalContextText') ? $('finalContextText').value : '',
+        blocks: parseBlocksText()
+      };
+    }
+
+    function renderBlocks(data) {
+      const rows = (data.blocks || []).map(b => `
+        <div class="scan-link">
+          <b>${b.score} pts · ${b.tier} · ${b.source_label}</b>
+          <span>${b.info_type} · ${b.confirmed ? 'confirmado' : 'não confirmado'} · ${b.impact_label}</span>
+          <span>${b.text}</span>
+        </div>
+      `).join('');
+      const conflicts = (data.conflicts || []).map(c => `<div class="error" style="margin-top:8px;">${c.area}: ${c.conflict} — ${c.action}</div>`).join('');
+      $('scanBox').innerHTML = `
+        <div class="scan-box">
+          <b>Coleta por blocos v1.7 · Nota ${data.context_grade || '—'} · Teto ${data.context_cap || '—'} · ${data.total_source_score || 0}/100</b>
+          <div class="muted" style="margin-top:6px;">Cada achado foi ponderado pela matriz de fontes. Revise conflitos antes de rodar a V26.</div>
+          ${conflicts}
+          <div class="scan-links">${rows}</div>
+        </div>
+      `;
+    }
+
+    if ($('blocksTemplateBtn')) $('blocksTemplateBtn').addEventListener('click', () => {
+      $('sourceBlocksText').value = [
+        'ESPN | desfalque_confirmado | sim | under | ',
+        'GE | escalação_confirmada | sim | neutral | ',
+        'SofaScore | estatistica_pre_jogo | não | under | ',
+        'FootyStats | estatistica_pre_jogo | não | under | ',
+        'Academia | prognostico | não | under | ',
+        'Pinnacle | odds_mercado | sim | neutral | ',
+        'Jornal local | motivacao_tabela | sim | risk | '
+      ].join('\n');
+      $('contextInfo').innerHTML = '<div class="success">Modelo de blocos inserido. Complete o texto de cada linha.</div>';
+    });
+
+    if ($('blocksAnalyzeBtn')) $('blocksAnalyzeBtn').addEventListener('click', async () => {
+      const info = $('contextInfo');
+      const btn = $('blocksAnalyzeBtn');
+      btn.disabled = true;
+      info.innerHTML = '<span class="muted">Analisando blocos v1.7...</span>';
+      try {
+        const data = await request('/context/blocks/analyze', { method: 'POST', body: JSON.stringify(blocksPayload()) });
+        if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
+        renderBlocks(data);
+        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
+        info.innerHTML = `<div class="success">Blocos analisados. Contexto Mestre ponderado atualizado.${warningText}</div>`;
+        setStatus('ok', 'Blocos analisados');
+      } catch (err) {
+        info.innerHTML = `<div class="error">Erro ao analisar blocos: ${err.message || err}</div>`;
+        setStatus('err', 'Erro nos blocos');
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     function renderWeights(data) {
       const rows = (data.sources || []).map(s => `
@@ -525,7 +648,7 @@
         }
         renderScanLinks(data);
         const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        info.innerHTML = `<div class="success">Varredura IA v1.6 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
+        info.innerHTML = `<div class="success">Varredura IA v1.7 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
         setStatus('ok', 'Varredura IA pronta');
       } catch (err) {
         info.innerHTML = `<div class="error">Erro na varredura IA: ${err.message || err}</div>`;
@@ -616,7 +739,7 @@
       } catch (err) { box.innerHTML = `<div class="error" style="margin-top:12px;">${err.message}</div>`; setStatus('err', 'Erro'); }
     });
     $('clearBtn').addEventListener('click', () => {
-      ['homeTeam','awayTeam','competition','oddsText','contextText','newsText','auxContextText','finalContextText'].forEach(id => { if ($(id)) $(id).value = ''; });
+      ['homeTeam','awayTeam','competition','oddsText','contextText','newsText','auxContextText','sourceBlocksText','finalContextText'].forEach(id => { if ($(id)) $(id).value = ''; });
       $('mode').value = 'pre_live';
       $('contextInfo').innerHTML = '<span class="muted">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</span>';
       if ($('scanBox')) $('scanBox').innerHTML = '';

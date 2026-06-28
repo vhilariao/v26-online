@@ -1,8 +1,10 @@
-# V26 Web v1.6 — Matriz de Pesos das Fontes
+# V26 Web v1.7 — Coleta por Blocos
 
 Mudanças:
-- Novo botão: Ver pesos.
-- Varredura IA usa matriz oficial v1.6.
-- Pesos: ESPN/GE/notícia local/desfalque/odds/live stats peso 20+; SofaScore pré 15; FootyStats 14; Academia das Apostas 10; SportyTrader/WinDrawWin 8; TheSportsDB 5.
-- Peso mede força do contexto/fonte, não valor da aposta.
-- V26 Core continua sendo a decisão final.
+- Novo campo: Coleta por blocos v1.7.
+- Novo botão: Modelo de blocos.
+- Novo botão: Analisar blocos v1.7.
+- Chama `/context/blocks/analyze`.
+- Cada achado recebe fonte, tipo, confirmação, impacto e peso.
+- Detecta conflitos e gera teto contextual.
+- V26 Core continua como decisão final.
