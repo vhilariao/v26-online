@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.4</title>
+  <title>V26 Web v1.5</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -135,6 +135,33 @@
       font-size: 12px;
       line-height: 1.45;
     }
+
+    .scan-box {
+      margin-top: 10px;
+      border: 1px solid rgba(56,189,248,.24);
+      background: rgba(8,47,73,.22);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .scan-links {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .scan-link {
+      display: block;
+      color: #bae6fd;
+      text-decoration: none;
+      background: rgba(9,15,29,.72);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px;
+    }
+    .scan-link b { color: #e0f2fe; }
+    .scan-link span { display: block; color: var(--muted); margin-top: 3px; }
+
     .split-note {
       color: #fde68a;
       background: rgba(120,53,15,.18);
@@ -160,8 +187,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.4</h1>
-          <div class="subtitle">Interface Safari para conversar com a V26 Core API</div>
+          <h1>V26 Web v1.5</h1>
+          <div class="subtitle">Varredura IA-guided + Contexto Mestre + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -233,14 +260,16 @@
 
         <div class="actions">
           <button id="contextBtn" class="good">Buscar dados auxiliares</button>
+          <button id="scanBtn" class="primary">Varredura IA v1.5</button>
           <button id="buildMasterBtn" class="warn">Consolidar Contexto Mestre</button>
         </div>
         <div id="contextInfo" class="muted small context-note">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</div>
+        <div id="scanBox"></div>
 
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v1.4: fonte automática não manda na análise. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v1.5: IA/varredura organiza o contexto, mas não decide aposta. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -335,6 +364,22 @@
         moment: ''
       };
     }
+
+    function scanPayload() {
+      return {
+        home_team: $('homeTeam').value.trim(),
+        away_team: $('awayTeam').value.trim(),
+        competition: $('competition').value.trim(),
+        mode: $('mode').value,
+        odds_text: $('oddsText').value,
+        market_focus: '',
+        moment: '',
+        manual_context: $('contextText').value,
+        news_context: $('newsText') ? $('newsText').value : '',
+        aux_context: $('auxContextText') ? $('auxContextText').value : ''
+      };
+    }
+
     function classSpan(cls) {
       return `<span class="class-${String(cls).replace('+','\\+')}" style="font-weight:900">${cls}</span>`;
     }
@@ -411,6 +456,48 @@
         setStatus('err', `Erro ao conectar com a API: ${err.message || err}`);
       }
     });
+
+    function renderScanLinks(data) {
+      const links = data.links || [];
+      const topLinks = links.slice(0, 12).map((l, idx) => `
+        <a class="scan-link" href="${l.url}" target="_blank" rel="noopener">
+          <b>${idx + 1}. [${l.priority}] ${l.title}</b>
+          <span>${l.category} · peso ${l.weight}</span>
+        </a>
+      `).join('');
+      $('scanBox').innerHTML = `
+        <div class="scan-box">
+          <b>Varredura IA v1.5 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
+          <div class="muted" style="margin-top:6px;">Foram gerados ${links.length} links/perguntas. Abra os principais, confirme notícias/desfalques e ajuste o Contexto Mestre antes de rodar a V26.</div>
+          <div class="scan-links">${topLinks}</div>
+        </div>
+      `;
+    }
+
+    if ($('scanBtn')) $('scanBtn').addEventListener('click', async () => {
+      const info = $('contextInfo');
+      const btn = $('scanBtn');
+      btn.disabled = true;
+      info.innerHTML = '<span class="muted">Gerando varredura IA v1.5...</span>';
+      try {
+        const data = await request('/context/scan', { method: 'POST', body: JSON.stringify(scanPayload()) });
+        if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
+        if ($('auxContextText') && data.search_plan_text) {
+          const currentAux = $('auxContextText').value.trim();
+          $('auxContextText').value = currentAux ? currentAux + '\\n\\n' + data.search_plan_text : data.search_plan_text;
+        }
+        renderScanLinks(data);
+        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
+        info.innerHTML = `<div class="success">Varredura IA v1.5 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
+        setStatus('ok', 'Varredura IA pronta');
+      } catch (err) {
+        info.innerHTML = `<div class="error">Erro na varredura IA: ${err.message || err}</div>`;
+        setStatus('err', 'Erro na varredura');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
     $('contextBtn').addEventListener('click', async () => {
       const info = $('contextInfo');
       const btn = $('contextBtn');
@@ -495,6 +582,7 @@
       ['homeTeam','awayTeam','competition','oddsText','contextText','newsText','auxContextText','finalContextText'].forEach(id => { if ($(id)) $(id).value = ''; });
       $('mode').value = 'pre_live';
       $('contextInfo').innerHTML = '<span class="muted">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</span>';
+      if ($('scanBox')) $('scanBox').innerHTML = '';
       $('resultBox').innerHTML = '<span class="muted">Nenhuma análise rodada ainda.</span>';
     });
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }

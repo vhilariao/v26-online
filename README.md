@@ -1,12 +1,10 @@
-# V26 Web v1.4 — Contexto Mestre
+# V26 Web v1.5 — Varredura IA-guided
 
 Frontend estático para GitHub Pages.
 
 Mudanças:
-- Dados automáticos não sobrescrevem mais o contexto manual.
-- Novo campo: Contexto manual / leitura mestre.
-- Novo campo: Notícias / desfalques / motivação.
-- Novo campo: Dados auxiliares automáticos.
-- Novo botão: Consolidar Contexto Mestre.
-- A V26 usa o Contexto Mestre final quando preenchido.
-- Engine V26 no backend permanece intocada.
+- Novo botão: Varredura IA v1.5.
+- Chama `/context/scan` no backend.
+- Gera Contexto Mestre estruturado automaticamente.
+- Mostra links/perguntas de varredura por fonte e prioridade.
+- Mantém regra: IA coleta/organiza, V26 decide, usuário audita.
