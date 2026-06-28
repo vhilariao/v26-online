@@ -158,6 +158,7 @@
           <button id="testApi">Testar conexão</button>
           <button id="runBench" class="warn">Rodar benchmarks</button>
         </div>
+        <div id="apiTestResult" class="notice"></div>
         <div id="benchmarksBox"></div>
       </section>
 
@@ -339,10 +340,15 @@
     $('saveApi').addEventListener('click', () => {
       localStorage.setItem('v26_api_url', apiBase());
       setStatus('warn', 'API salva');
-    });
+    }); 
     $('testApi').addEventListener('click', async () => {
-      try { const data = await request('/health'); setStatus('ok', `API ok · ${data.version || ''}`); }
-      catch (err) { renderError(err); }
+  try {
+    const data = await request('/health');
+    setStatus('ok', 'Conexão OK com a V26 Core API');
+    } catch (err) {
+    setStatus('bad', 'Erro ao conectar com a API');
+    renderError(err);
+    }
     });
     $('parseBtn').addEventListener('click', async () => {
       try { const data = await request('/parse', { method: 'POST', body: JSON.stringify({ odds_text: $('oddsText').value }) }); setStatus('ok', 'Parser ok'); renderParse(data); }
