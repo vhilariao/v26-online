@@ -1,8 +1,7 @@
-# V26 Web v1.8.1 — Interface limpa
+# V26 Web v1.8.2 — Busca focada
 
 Mudanças:
-- Remove excesso visual da v1.7/v1.8.
-- Botão principal: Gerar Contexto IA.
-- Ferramentas técnicas ficam escondidas em "Ferramentas técnicas / auditoria avançada".
-- A API continua responsável por varredura, blocos, pesos e Contexto Mestre.
+- Interface limpa preservada.
+- Texto atualizado para v1.8.2.
+- Backend faz busca focada, filtro de relevância e deduplicação.
 - V26 Core continua como decisão final.
