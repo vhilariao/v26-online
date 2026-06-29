@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v3.0</title>
+  <title>V26 Web v3.1</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -250,7 +250,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v3.0</h1>
+          <h1>V26 Web v3.1</h1>
           <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
         </div>
       </div>
@@ -377,7 +377,7 @@
           <h2>Foto das odds Pinnacle</h2>
           <div class="muted small">
             Envie um ou vários prints/fotos da tela da Pinnacle. O OCR tenta extrair os mercados e joga uma sugestão para revisão.
-            Confirme sempre mercado, linha e odd antes de rodar IA + V26.
+            Confirme sempre mercado, linha e odd antes de rodar V26.
           </div>
           <div class="grid two">
             <div>
@@ -441,12 +441,12 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v3.0: Core puro ranqueia matematicamente; IA + V26 seleciona o mercado que melhor encaixa odds + contexto + Core. Compare os dois resultados. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v3.1: não há dois caminhos. A IA usa a metodologia V26, limpa odds Pinnacle, interpreta contexto e o Core classifica EV/classe/stake no mesmo fluxo. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
-          <button id="iaV26Btn" class="primary">Rodar IA + V26</button>
-          <button id="analyzeBtn" class="primary">Rodar V26 Core</button>
+          <button id="iaV26Btn" class="primary">Rodar V26</button>
+          <button id="analyzeBtn" style="display:none;">Rodar V26 Core</button>
           <button id="parseBtn">Testar parser</button>
           <button id="clearBtn">Limpar</button>
         </div>
@@ -458,7 +458,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v3.0 — IA seleciona mercado + Core valida. V26 decide.</div>
+    <div class="footer-note">V26 Web v3.1 — fluxo único IA+V26. V26 decide.</div>
   </main>
 
   <script>
@@ -663,23 +663,59 @@
 
     if ($('ocrBtn')) $('ocrBtn').addEventListener('click', runPinnacleOcr);
     if ($('ocrUseBtn')) $('ocrUseBtn').addEventListener('click', () => {
-      $('oddsText').value = dedupeLines($('ocrText').value || '');
+      $('oddsText').value = frontendCleanOddsText(dedupeLines($('ocrText').value || ''));
       $('ocrInfo').innerHTML = '<div class="success">Texto OCR enviado para o campo odds.</div>';
     });
     if ($('ocrAppendBtn')) $('ocrAppendBtn').addEventListener('click', () => {
       const current = $('oddsText').value.trim();
       const add = $('ocrText').value.trim();
-      $('oddsText').value = dedupeLines([current, add].filter(Boolean).join('\n'));
+      $('oddsText').value = frontendCleanOddsText(dedupeLines([current, add].filter(Boolean).join('\n')));
       $('ocrInfo').innerHTML = '<div class="success">Texto OCR adicionado às odds.</div>';
     });
 
     // Odds por API não é mais o fluxo principal. Oculta botões automáticos antigos se existirem.
     window.addEventListener('load', () => {
-      ['oddsMatchBtn','oddsAdvancedBtn','oddsEventsBtn','oddsSportsBtn','oddsIoDashboardBtn','oddsIoMatchBtn','oddsIoEventsBtn','oddsIoSportsBtn'].forEach(id => {
+      ['oddsMatchBtn','oddsAdvancedBtn','oddsEventsBtn','oddsSportsBtn','oddsIoDashboardBtn','oddsIoMatchBtn','oddsIoEventsBtn','oddsIoSportsBtn','analyzeBtn','parserBtn'].forEach(id => {
         const el = $(id);
         if (el) el.style.display = 'none';
       });
     });
+
+
+
+    function frontendCleanOddsText(text) {
+      let t = String(text || '').replace(/\r/g, '\n');
+      t = t.replace(/@\s*([0-9]+(?:[.,][0-9]+)?)\s*\n\s*\[?Pinnacle\]?/gi, '@$1 [Pinnacle]');
+      t = t.replace(/\[\s*Pinnacle\s*\]/gi, '[Pinnacle]');
+      const seen = new Set();
+      const out = [];
+      for (let line of t.split(/\n+/)) {
+        line = line.trim().replace(/[−–—]/g, '-').replace(/\s+/g, ' ');
+        if (!line) continue;
+        line = line.replace(/@(\d+),(\d+)/g, '@$1.$2');
+        line = line.replace(/@(\d{4})(?=\s|$)/g, (_, x) => '@' + x[0] + '.' + x.slice(1));
+        if (line.includes('@') && !/\[Pinnacle\]/i.test(line)) line += ' [Pinnacle]';
+        const key = line.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          out.push(line);
+        }
+      }
+      return out.join('\n');
+    }
+
+    async function backendCleanOddsText(text) {
+      try {
+        const data = await request('/odds/clean-pinnacle', {
+          method: 'POST',
+          body: JSON.stringify({ odds_text: text || '' })
+        });
+        if (data && data.clean_text) return data.clean_text;
+      } catch (err) {
+        // backend cleaner é auxiliar; fallback local.
+      }
+      return frontendCleanOddsText(text);
+    }
 
 
     function payload() {
@@ -1607,12 +1643,12 @@
 
       $('resultBox').innerHTML = `
         <div class="${decision.decision === 'NO_BET' ? 'warn' : 'success'}" style="margin-bottom:12px;">
-          <b>${decision.label || data.decision_label || 'IA + V26'}</b><br>
+          <b>${decision.label || data.decision_label || 'V26'}</b><br>
           ${s.operational_decision || data.operational_alert || ''}
         </div>
 
         <div class="result-hero">
-          <div class="pill">${s.match || ''} · IA + V26</div>
+          <div class="pill">${s.match || ''} · V26</div>
           <p class="market">${s.headline || ''}</p>
           <div class="muted">${decision.reason || ''}</div>
         </div>
@@ -1630,7 +1666,7 @@
         <h2>4. Hipóteses de vantagem</h2>
         <div class="info-box"><ul>${hypsHtml || '<li>Sem hipóteses geradas.</li>'}</ul></div>
 
-        <h2>5. Ranking IA + V26</h2>
+        <h2>5. Ranking V26</h2>
         <table>
           <thead>
             <tr>
@@ -1640,27 +1676,28 @@
           <tbody>${iaRankingHtml}</tbody>
         </table>
 
-        <h2>6. Comparação com Core puro</h2>
+        <h2>6. Comparação com Core técnico</h2>
         <div class="info-box">
-          <b>Core puro:</b> ${corePure.market || ''} · Classe ${corePure.classification || ''} · EV ${Number(corePure.ev || 0).toFixed(1)}% · ${corePure.stake || ''}<br>
-          <b>IA + V26:</b> ${decision.market || ''} · Classe ${decision.classification || ''} · EV ${Number(decision.ev || 0).toFixed(1)}% · ${decision.stake || ''}
+          <b>Core técnico:</b> ${corePure.market || ''} · Classe ${corePure.classification || ''} · EV ${Number(corePure.ev || 0).toFixed(1)}% · ${corePure.stake || ''}<br>
+          <b>V26:</b> ${decision.market || ''} · Classe ${decision.classification || ''} · EV ${Number(decision.ev || 0).toFixed(1)}% · ${decision.stake || ''}
           <br><br>
-          O botão Rodar V26 Core mostra o ranking matemático puro. O botão IA + V26 reordena pelo encaixe entre odds, contexto e Core.
+          O V26 usa IA + Core em conjunto. A comparação técnica abaixo é apenas auditoria interna.
         </div>
 
         <h2>Alertas do Core</h2>
         <div class="info-box"><ul>${(coreDecision.alerts || []).map(a => `<li>${a}</li>`).join('')}</ul></div>
       `;
 
-      setStatus(data.decision === 'NO_BET' ? 'warn' : 'ok', 'IA + V26 pronto');
+      setStatus(data.decision === 'NO_BET' ? 'warn' : 'ok', 'V26 pronto');
     }
 
     if ($('iaV26Btn')) $('iaV26Btn').addEventListener('click', async () => {
       const btn = $('iaV26Btn');
       btn.disabled = true;
-      setStatus('warn', 'Rodando IA + V26');
-      $('resultBox').innerHTML = '<span class="muted">IA lendo odds, buscando contexto e enviando ao V26 Core...</span>';
+      setStatus('warn', 'Rodando V26');
+      $('resultBox').innerHTML = '<span class="muted">Limpando odds Pinnacle, aplicando IA V26 e classificando...</span>';
       try {
+        $('oddsText').value = await backendCleanOddsText($('oddsText').value);
         const data = await request('/analyze/ia-v26', { method: 'POST', body: JSON.stringify(payload()) });
         renderIaV26Result(data);
         if (data.context_ia && $('finalContextText')) {
