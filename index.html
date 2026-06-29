@@ -2,1933 +2,419 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#111827" />
-  <title>V26 Web v3.5.1</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icon.svg" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>V26 Web v3.6</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #0b1020;
-      --panel: #111827;
-      --panel2: #172036;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --border: #263248;
-      --green: #22c55e;
-      --yellow: #f59e0b;
-      --red: #ef4444;
-      --blue: #38bdf8;
-      --purple: #a78bfa;
+      --bg:#0b1220; --card:#111a2e; --card2:#16243d; --muted:#9aa6bb;
+      --text:#e8edf7; --line:#263653; --blue:#5db7ff; --green:#16a765;
+      --warn:#eab308; --red:#ef4444; --purple:#8b5cf6;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background: radial-gradient(circle at top, #16213f 0, var(--bg) 52%);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      padding: 14px 16px;
-      background: rgba(11, 16, 32, 0.86);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-    }
-    .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .logo {
-      width: 38px; height: 38px; border-radius: 12px;
-      background: linear-gradient(135deg, #38bdf8, #a78bfa);
-      display: grid; place-items: center;
-      font-weight: 900; color: #07101f;
-    }
-    h1 { font-size: 18px; line-height: 1.1; margin: 0; }
-    .subtitle { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .status {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-size: 12px; color: var(--muted);
-      border: 1px solid var(--border); border-radius: 999px;
-      padding: 6px 10px; background: rgba(17,24,39,.7);
-      white-space: nowrap;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
-    .dot.ok { background: var(--green); }
-    .dot.err { background: var(--red); }
-    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card {
-      background: rgba(17, 24, 39, 0.92);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 12px 36px rgba(0,0,0,.22);
-    }
-    .card h2 { font-size: 15px; margin: 0 0 12px; }
-    label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
-    input, textarea, select {
-      width: 100%; border: 1px solid var(--border); background: #090f1d;
-      color: var(--text); border-radius: 12px; padding: 11px 12px;
-      font: inherit; outline: none;
-    }
-    textarea { min-height: 120px; resize: vertical; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    button {
-      border: 0; border-radius: 12px; padding: 11px 12px;
-      background: #263248; color: var(--text); font-weight: 700;
-      cursor: pointer; min-height: 44px;
-    }
-    button.primary { background: linear-gradient(135deg, #38bdf8, #a78bfa); color: #07101f; }
-    button.good { background: #164b2a; color: #bff7cf; }
-    button.warn { background: #4a3211; color: #ffdf9b; }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    .pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 10px; border-radius: 999px; font-size: 12px;
-      border: 1px solid var(--border); background: #0b1224; color: var(--muted);
-    }
-    .result-hero {
-      background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(167,139,250,.14));
-      border: 1px solid rgba(56,189,248,.25);
-      padding: 14px; border-radius: 16px; margin-top: 10px;
-    }
-    .market { font-size: 18px; font-weight: 900; margin: 0 0 8px; }
-    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-    .metric { background: rgba(9,15,29,.82); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
-    .metric b { display: block; font-size: 17px; }
-    .metric span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .class-A, .class-A\+ { color: var(--green); }
-    .class-B\+ { color: var(--yellow); }
-    .class-B { color: #fde68a; }
-    .class-C, .class-D { color: #fca5a5; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-    th, td { text-align: left; border-bottom: 1px solid var(--border); padding: 9px 6px; vertical-align: top; }
-    th { color: var(--muted); font-size: 11px; font-weight: 700; }
-    .muted { color: var(--muted); }
-    .error { color: #fecaca; background: rgba(127,29,29,.28); border: 1px solid rgba(248,113,113,.25); padding: 10px; border-radius: 12px; }
-    .success { color: #bbf7d0; background: rgba(20,83,45,.28); border: 1px solid rgba(34,197,94,.25); padding: 10px; border-radius: 12px; }
-    .bench-list { display: grid; gap: 8px; margin-top: 10px; }
-    .bench-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; border: 1px solid var(--border); padding: 10px; border-radius: 12px; background: rgba(9,15,29,.72); }
-    .small { font-size: 12px; }
-    .footer-note { color: var(--muted); font-size: 12px; padding: 18px 0 4px; text-align: center; }
-    .context-note { margin-top: 8px; }
-    .info-box {
-      margin-top: 10px;
-      color: #dbeafe;
-      background: rgba(30,64,175,.18);
-      border: 1px solid rgba(59,130,246,.25);
-      padding: 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .scan-box {
-      margin-top: 10px;
-      border: 1px solid rgba(56,189,248,.24);
-      background: rgba(8,47,73,.22);
-      border-radius: 12px;
-      padding: 10px;
-      font-size: 12px;
-      line-height: 1.45;
-    }
-    .scan-links {
-      display: grid;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .scan-link {
-      display: block;
-      color: #bae6fd;
-      text-decoration: none;
-      background: rgba(9,15,29,.72);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 9px;
-    }
-    .scan-link b { color: #e0f2fe; }
-    .scan-link span { display: block; color: var(--muted); margin-top: 3px; }
-
-
-
-
-    .odds-row {
-      display: grid;
-      gap: 8px;
-      padding: 10px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(9,15,29,.62);
-      margin: 8px 0;
-    }
-    .odds-row b { color: #e2e8f0; }
-    .odds-row span { color: var(--muted); font-size: 12px; }
-    .odds-pill {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      margin: 2px 4px 2px 0;
-      font-size: 12px;
-    }
-
-    .agenda-grid {
-      display: grid;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .match-card {
-      display: grid;
-      gap: 6px;
-      padding: 10px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(9,15,29,.62);
-    }
-    .match-card b { color: #e2e8f0; }
-    .match-card span { color: var(--muted); font-size: 12px; }
-    .match-card button { width: fit-content; padding: 9px 12px; border-radius: 10px; }
-
-    details.advanced {
-      margin-top: 12px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px;
-      background: rgba(9,15,29,.45);
-    }
-    details.advanced summary {
-      cursor: pointer;
-      color: #cbd5e1;
-      font-weight: 700;
-      list-style: none;
-    }
-    details.advanced summary::-webkit-details-marker { display: none; }
-    details.advanced summary::after {
-      content: " abrir";
-      color: var(--muted);
-      font-weight: 500;
-      font-size: 12px;
-    }
-    details.advanced[open] summary::after { content: " fechar"; }
-
-    .split-note {
-      color: #fde68a;
-      background: rgba(120,53,15,.18);
-      border: 1px solid rgba(245,158,11,.24);
-      padding: 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      line-height: 1.45;
-      margin-top: 10px;
-    }
-    @media (max-width: 860px) {
-      .grid { grid-template-columns: 1fr; }
-      .row, .row-3 { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: repeat(2, 1fr); }
-      .header-inner { align-items: flex-start; }
-      .status { display: inline-flex; margin-top: 8px; }
-    }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width:920px; margin:0 auto; padding:18px; }
+    header { position:sticky; top:0; z-index:2; background:rgba(11,18,32,.94); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
+    .head { max-width:920px; margin:0 auto; padding:14px 18px; display:flex; align-items:center; gap:12px; }
+    .logo { width:48px; height:48px; border-radius:14px; display:grid; place-items:center; font-weight:900; color:#07111f; background:linear-gradient(135deg,#5bd2ff,#9a7cff); }
+    h1 { margin:0; font-size:22px; }
+    .sub { color:var(--muted); font-size:14px; margin-top:3px; }
+    .status { margin-left:auto; border:1px solid var(--line); border-radius:999px; padding:8px 12px; color:var(--muted); white-space:nowrap; }
+    .dot { display:inline-block; width:10px; height:10px; background:var(--warn); border-radius:50%; margin-right:7px; }
+    .ok .dot { background:var(--green); }
+    .bad .dot { background:var(--red); }
+    section { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; margin:16px 0; }
+    h2 { margin:0 0 12px; font-size:20px; }
+    label { display:block; margin:12px 0 6px; color:#cbd5e1; font-weight:700; }
+    input, textarea, select { width:100%; border:1px solid var(--line); border-radius:14px; padding:13px; background:#08111f; color:var(--text); font-size:16px; }
+    textarea { min-height:130px; resize:vertical; line-height:1.35; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    @media (max-width:720px) { .grid, .grid3 { grid-template-columns:1fr; } .status { display:none; } }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    button { border:0; border-radius:15px; padding:14px 16px; font-size:16px; font-weight:800; color:#07111f; background:#dbeafe; cursor:pointer; }
+    button.primary { background:linear-gradient(135deg,#5bd2ff,#a78bfa); }
+    button.good { background:#86efac; }
+    button.secondary { background:#263653; color:var(--text); }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .hint { color:var(--muted); font-size:14px; line-height:1.45; }
+    .final { border-color:#14532d; background:#0d2a22; }
+    .final.no { border-color:#7f1d1d; background:#2a1013; }
+    .final h2 { color:#bbf7d0; }
+    .no h2 { color:#fecaca; }
+    .metric { background:#08111f; border:1px solid var(--line); border-radius:14px; padding:13px; }
+    .metric b { display:block; font-size:22px; margin-bottom:4px; }
+    .metric span { color:var(--muted); }
+    .pill { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:6px 10px; color:#cbd5e1; background:#07111f; font-size:13px; }
+    .box { background:var(--card2); border:1px solid #27446f; border-radius:16px; padding:14px; line-height:1.45; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { border-bottom:1px solid var(--line); padding:9px 6px; text-align:left; vertical-align:top; }
+    th { color:#cbd5e1; }
+    details { border:1px solid var(--line); border-radius:16px; padding:12px; background:#0d1729; }
+    summary { font-weight:800; cursor:pointer; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="brand">
-        <div class="logo">V26</div>
-        <div>
-          <h1>V26 Web v3.5.1</h1>
-          <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
-        </div>
-      </div>
-      <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
+<header>
+  <div class="head">
+    <div class="logo">V26</div>
+    <div>
+      <h1>V26 Web v3.6</h1>
+      <div class="sub">Fluxo único: Pinnacle limpa → IA executa V26 → Core classifica</div>
     </div>
-  </header>
+    <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
+  </div>
+</header>
 
-  <main>
+<main class="wrap">
+  <section>
+    <h2>1. Jogo</h2>
     <div class="grid">
-      <section class="card">
-        <h2>1. Conexão da API</h2>
-        <label for="apiUrl">URL da V26 Core API</label>
-        <input id="apiUrl" placeholder="https://sua-api.onrender.com" />
-        <div class="actions">
-          <button id="saveApi" class="good">Salvar API</button>
-          <button id="testApi">Testar conexão</button>
-          <button id="runBench" class="warn">Rodar benchmarks</button>
-        </div>
-        <div id="benchmarksBox"></div>
-      </section>
+      <div>
+        <label>Time 1 / favorito</label>
+        <input id="homeTeam" value="Alemanha" />
+      </div>
+      <div>
+        <label>Time 2</label>
+        <input id="awayTeam" value="Paraguai" />
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <label>Competição</label>
+        <input id="competition" value="Copa do Mundo FIFA" />
+      </div>
+      <div>
+        <label>Modo</label>
+        <select id="mode">
+          <option value="pre_live">Pré-live</option>
+          <option value="live">Live</option>
+          <option value="pre_match">Pré-jogo</option>
+        </select>
+      </div>
+    </div>
+    <label>Contexto manual / leitura mestre</label>
+    <textarea id="contextText" placeholder="Ex: Alemanha muito favorita, força ofensiva superior, Paraguai reativo/recuado, ML/classificar espremidos, melhor caminho pode ser HT..."></textarea>
+  </section>
 
-      <section class="card">
-        <h2>2. Benchmarks rápidos</h2>
-        <div class="actions">
-          <button data-sample="criciuma">Criciúma</button>
-          <button data-sample="operario">Operário</button>
-          <button data-sample="novo">Novorizontino</button>
-          <button data-sample="avai">Athletic x Avaí</button>
-        </div>
-        <p class="muted small">Use para validar se a API está respondendo igual aos casos oficiais da V26.</p>
-      </section>
+  <section>
+    <h2>2. Entrada Manual Pinnacle</h2>
+    <div class="hint">Fluxo oficial. OCR é apenas rascunho; a odd enviada ao V26 deve estar limpa.</div>
+    <div class="grid3">
+      <div>
+        <label>Mercado</label>
+        <select id="manualMarketType">
+          <option value="team_total">Total da Equipe</option>
+          <option value="total_goals">Total de Gols</option>
+          <option value="handicap">Handicap Asiático</option>
+          <option value="moneyline">Resultado / ML</option>
+          <option value="qualify">Classificar</option>
+          <option value="btts">Ambas Marcam</option>
+          <option value="corners">Escanteios</option>
+          <option value="cards">Cartões</option>
+        </select>
+      </div>
+      <div>
+        <label>Time</label>
+        <input id="manualTeam" value="Alemanha" />
+      </div>
+      <div>
+        <label>Período</label>
+        <select id="manualPeriod">
+          <option value="FT">Partida</option>
+          <option value="HT">1º Tempo</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid3">
+      <div>
+        <label>Seleção</label>
+        <select id="manualSide">
+          <option value="Over">Over / Acima</option>
+          <option value="Under">Under / Menos</option>
+          <option value="ML">ML / Vencer</option>
+          <option value="Sim">Sim</option>
+          <option value="Não">Não</option>
+        </select>
+      </div>
+      <div>
+        <label>Linha</label>
+        <input id="manualLine" inputmode="decimal" placeholder="Ex: 0.5, -0.5, 1.25" />
+      </div>
+      <div>
+        <label>Odd Pinnacle</label>
+        <input id="manualOdd" inputmode="decimal" placeholder="Ex: 1.769" />
+      </div>
+    </div>
+    <label>Linha limpa gerada</label>
+    <input id="manualPreview" readonly />
+    <div class="actions">
+      <button id="manualAddBtn" class="good">Adicionar odd limpa</button>
+      <button id="germanyHtBtn" class="secondary">Alemanha -0.5 HT</button>
+      <button id="brazilTtHtBtn" class="secondary">Brasil TT HT Over 0.5</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Odds Pinnacle para V26</h2>
+    <textarea id="oddsText" placeholder="Ex:
+Handicap Alemanha HT -0.5 @1.769 [Pinnacle]
+Resultado Alemanha HT ML @1.787 [Pinnacle]"></textarea>
+    <div class="actions">
+      <button id="cleanBtn" class="secondary">Limpar odds</button>
+      <button id="runBtn" class="primary">Rodar V26</button>
+    </div>
+  </section>
+
+  <details>
+    <summary>OCR auxiliar por foto</summary>
+    <section style="margin:12px 0 0;">
+      <div class="hint">Use só para rascunho. Revise antes de rodar V26.</div>
+      <label>Fotos/prints da Pinnacle</label>
+      <input id="pinnacleImage" type="file" accept="image/*" multiple />
+      <div class="actions">
+        <button id="ocrBtn" class="secondary">Ler foto</button>
+        <button id="useOcrBtn" class="secondary">Usar OCR nas odds</button>
+      </div>
+      <div id="ocrInfo" class="hint"></div>
+      <label>Texto OCR</label>
+      <textarea id="ocrText"></textarea>
+    </section>
+  </details>
+
+  <section id="resultSection">
+    <h2>4. Resultado</h2>
+    <div id="resultBox" class="hint">Preencha jogo, contexto e odds limpas. Depois toque em Rodar V26.</div>
+  </section>
+</main>
+
+<script>
+const API = 'https://v26-core-api-2.onrender.com';
+const $ = id => document.getElementById(id);
+
+function setStatus(kind, text) {
+  const el = $('status');
+  el.className = 'status ' + (kind || '');
+  el.innerHTML = '<span class="dot"></span>' + text;
+}
+
+async function request(path, options={}) {
+  const res = await fetch(API + path, {
+    headers: {'Content-Type':'application/json'},
+    ...options
+  });
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = {raw:text}; }
+  if (!res.ok) throw new Error(data.detail || data.message || text || ('HTTP ' + res.status));
+  return data;
+}
+
+function frontendCleanOddsText(text) {
+  let t = String(text || '').replace(/\r/g, '\n');
+  t = t.replace(/@\s*([0-9]+(?:[.,][0-9]+)?)\s*\n\s*\[?Pinnacle\]?/gi, '@$1 [Pinnacle]');
+  t = t.replace(/\[\s*Pinnacle\s*\]/gi, '[Pinnacle]');
+  const seen = new Set();
+  const out = [];
+  for (let line of t.split(/\n+/)) {
+    line = line.trim().replace(/[−–—]/g, '-').replace(/\s+/g, ' ');
+    if (!line) continue;
+    line = line.replace(/@(\d+),(\d+)/g, '@$1.$2');
+    line = line.replace(/@(\d{4})(?=\s|$)/g, (_, x) => '@' + x[0] + '.' + x.slice(1));
+    if (line.includes('@') && !/\[Pinnacle\]/i.test(line)) line += ' [Pinnacle]';
+    const key = line.toLowerCase();
+    if (!seen.has(key)) { seen.add(key); out.push(line); }
+  }
+  return out.join('\n');
+}
+
+async function backendCleanOddsText(text) {
+  try {
+    const data = await request('/odds/clean-pinnacle', { method:'POST', body:JSON.stringify({odds_text:text || ''}) });
+    return data.clean_text || frontendCleanOddsText(text);
+  } catch {
+    return frontendCleanOddsText(text);
+  }
+}
+
+function buildManualLine() {
+  const type = $('manualMarketType').value;
+  const team = $('manualTeam').value.trim();
+  const period = $('manualPeriod').value;
+  const side = $('manualSide').value;
+  const line = $('manualLine').value.replace(',', '.').trim();
+  const odd = $('manualOdd').value.replace(',', '.').trim();
+  const p = period === 'HT' ? ' HT' : '';
+  if (!odd) return '';
+  let market = '';
+  if (type === 'team_total') {
+    if (!team || !line) return '';
+    market = `${team} Total da Equipe${p} ${side} ${line}`;
+  } else if (type === 'total_goals') {
+    if (!line) return '';
+    market = `Total gols${p} ${side} ${line}`;
+  } else if (type === 'handicap') {
+    if (!team || !line) return '';
+    market = `Handicap ${team}${p} ${line}`;
+  } else if (type === 'moneyline') {
+    if (!team) return '';
+    market = `Resultado ${team}${p} ML`;
+  } else if (type === 'qualify') {
+    if (!team) return '';
+    market = `Classificar ${team}`;
+  } else if (type === 'btts') {
+    market = `Ambas marcam ${side}`;
+  } else if (type === 'corners') {
+    if (!line) return '';
+    market = `Escanteios${p} ${side} ${line}`;
+  } else if (type === 'cards') {
+    if (!line) return '';
+    market = `Cartões${p} ${side} ${line}`;
+  }
+  return `${market} @${odd} [Pinnacle]`;
+}
+
+function updatePreview() { $('manualPreview').value = buildManualLine(); }
+['manualMarketType','manualTeam','manualPeriod','manualSide','manualLine','manualOdd'].forEach(id => {
+  $(id).addEventListener('input', updatePreview);
+  $(id).addEventListener('change', updatePreview);
+});
+updatePreview();
+
+$('manualAddBtn').addEventListener('click', () => {
+  const line = buildManualLine();
+  if (!line) return alert('Preencha mercado, linha quando aplicável e odd.');
+  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), line].filter(Boolean).join('\n'));
+});
+
+$('germanyHtBtn').addEventListener('click', () => {
+  const line = 'Handicap Alemanha HT -0.5 @1.769 [Pinnacle]';
+  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), line].filter(Boolean).join('\n'));
+});
+$('brazilTtHtBtn').addEventListener('click', () => {
+  const line = 'Brasil Total da Equipe HT Over 0.5 @1.740 [Pinnacle]';
+  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), line].filter(Boolean).join('\n'));
+});
+
+$('cleanBtn').addEventListener('click', async () => {
+  $('oddsText').value = await backendCleanOddsText($('oddsText').value);
+});
+
+function payload() {
+  return {
+    home_team: $('homeTeam').value.trim(),
+    away_team: $('awayTeam').value.trim(),
+    competition: $('competition').value.trim(),
+    mode: $('mode').value,
+    odds_text: $('oddsText').value,
+    context: $('contextText').value
+  };
+}
+
+function pct(x) {
+  if (x === null || x === undefined || x === '') return 'N/D';
+  return Number(x).toFixed(1) + '%';
+}
+function val(x) { return x === null || x === undefined || x === '' ? 'N/D' : x; }
+
+function renderResult(data) {
+  const s = data.strategy || {};
+  const d = s.decision || {};
+  const final = s.v26_final || d || {};
+  const isBet = (d.decision || data.decision) === 'BET_CANDIDATE';
+  const reasons = d.reasons || final.reasons || [];
+  const boxClass = isBet ? 'final' : 'final no';
+
+  $('resultBox').innerHTML = `
+    <div class="${boxClass}">
+      <h2>${isBet ? 'CANDIDATO À ENTRADA V26' : 'NÃO APOSTAR'}</h2>
+      <div style="font-size:20px;line-height:1.35;">
+        <b>${val(final.market || d.market)}</b><br>
+        Odd ${val(final.odd || d.odd)} · Classe ${val(final.classification || d.classification)} · EV ${pct(final.ev ?? d.ev)} · Stake ${val(final.stake || d.stake)}
+      </div>
     </div>
 
-    <div class="grid" style="margin-top:16px;">
-      <section class="card">
-        <h2>0. Dashboard — jogos de hoje</h2>
-        <div class="grid two">
-          <div>
-            <label for="agendaDate">Data</label>
-            <input id="agendaDate" type="date" />
-          </div>
-          <div>
-            <label for="agendaCompetition">Competição opcional</label>
-            <input id="agendaCompetition" placeholder="Ex: BR_SERIE_B, BSA, PL, CL..." />
-          </div>
-        </div>
-        <div class="actions">
-          <button id="agendaBtn" class="good">Atualizar Dashboard</button>
-          <button id="competitionsBtn">Ver competições</button>
-        </div>
-        <div class="actions">
-          <button class="filterBtn" data-agenda-filter="">Todos</button>
-          <button class="filterBtn" data-agenda-filter="BR_SERIE_B">Série B</button>
-          <button class="filterBtn" data-agenda-filter="BSA">Série A</button>
-          <button class="filterBtn" data-agenda-filter="PL">Premier League</button>
-          <button class="filterBtn" data-agenda-filter="CL">Champions</button>
-        </div>
-        <div id="agendaInfo" class="muted small">Dashboard carrega automaticamente os jogos de hoje. Use filtros se necessário.</div>
-        <div id="agendaBox" class="agenda-grid"></div>
-      </section>
+    <div class="grid3" style="margin-top:14px;">
+      <div class="metric"><b>${val(final.classification || d.classification)}</b><span>Classe V26</span></div>
+      <div class="metric"><b>${pct(final.ev ?? d.ev)}</b><span>EV</span></div>
+      <div class="metric"><b>${val(final.stake || d.stake)}</b><span>Stake</span></div>
+      <div class="metric"><b>${val(final.ic ?? d.ic)}</b><span>IC</span></div>
+      <div class="metric"><b>${pct(final.confidence ?? d.confidence)}</b><span>Confiança</span></div>
+      <div class="metric"><b>${pct(final.risk ?? d.risk)}</b><span>Risco</span></div>
     </div>
 
-    <div class="grid" style="margin-top:16px;">
-      <section class="card">
-        <h2>3. Nova análise</h2>
-        <div class="row">
-          <div>
-            <label for="homeTeam">Mandante</label>
-            <input id="homeTeam" placeholder="Athletic" />
-          </div>
-          <div>
-            <label for="awayTeam">Visitante</label>
-            <input id="awayTeam" placeholder="Avaí" />
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label for="competition">Competição</label>
-            <input id="competition" placeholder="Brasil Série B" />
-          </div>
-          <div>
-            <label for="mode">Modo</label>
-            <select id="mode">
-              <option value="pre_live">Pré-live</option>
-              <option value="live">Live</option>
-            </select>
-          </div>
-        </div>
-        <section class="subcard">
-          <h3>Odds automáticas</h3>
-          <div class="grid two">
-            <div>
-              <label for="oddsSportKey">Sport key</label>
-              <input id="oddsSportKey" placeholder="auto / soccer_brazil_serie_b" />
-            </div>
-            <div>
-              <label for="oddsBookmakers">Bookmaker opcional</label>
-              <input id="oddsBookmakers" placeholder="Ex: pinnacle,bet365" />
-            </div>
-          </div>
-          <div class="grid two">
-            <div>
-              <label for="oddsRegions">Regiões</label>
-              <input id="oddsRegions" value="eu,uk,us" />
-            </div>
-            <div>
-              <label for="oddsMarkets">Mercados básicos</label>
-              <input id="oddsMarkets" value="h2h,spreads,totals" />
-            </div>
-          </div>
-          <label for="oddsAdvancedMarkets">Mercados avançados por evento</label>
-          <input id="oddsAdvancedMarkets" value="h2h,spreads,totals,btts,draw_no_bet,alternate_spreads,alternate_totals" />
-          <div class="actions">
-            <button id="oddsMatchBtn" class="good">Buscar odds básicas</button>
-            <button id="oddsAdvancedBtn" class="primary">Buscar odds avançadas</button>
-            <button id="oddsEventsBtn">Ver eventos com odds</button>
-            <button id="oddsSportsBtn">Ver sports keys</button>
-          </div>
-          <div id="oddsInfo" class="muted small">Odds automáticas são referência. Agora o campo de odds recebe só linhas limpas; relatório fica abaixo. HT pode exigir Pinnacle manual.</div>
-          <div id="oddsBox"></div>
-        </section>
+    <h2 style="margin-top:18px;">Leitura V26</h2>
+    <div class="box">${s.headline || ''}<br><br>${s.operational_decision || data.operational_alert || ''}</div>
 
-        <section class="subcard">
-          <h2>Entrada Manual Pinnacle</h2>
-          <div class="muted small">
-            Caminho principal recomendado. Preencha o mercado que você quer avaliar e adicione odds limpas ao V26.
-            Use OCR só como apoio.
-          </div>
+    <h2 style="margin-top:18px;">Mercado primeiro</h2>
+    <div class="box">${(s.market_first || {}).reading || ''}</div>
 
-          <div class="grid two">
-            <div>
-              <label for="manualMarketType">Mercado</label>
-              <select id="manualMarketType">
-                <option value="team_total">Total da Equipe</option>
-                <option value="total_goals">Total de Gols</option>
-                <option value="handicap">Handicap Asiático</option>
-                <option value="moneyline">Resultado / ML</option>
-                <option value="qualify">Classificar</option>
-                <option value="btts">Ambas Marcam</option>
-                <option value="corners">Escanteios</option>
-                <option value="cards">Cartões</option>
-              </select>
-            </div>
-            <div>
-              <label for="manualTeam">Time / seleção</label>
-              <select id="manualTeam">
-                <option value="Brasil">Brasil</option>
-                <option value="Japão">Japão</option>
-                <option value="">Sem time</option>
-                <option value="custom">Outro...</option>
-              </select>
-            </div>
-          </div>
+    <h2 style="margin-top:18px;">Contexto contra a odd</h2>
+    <div class="box">${(s.context_vs_price || {}).reading || ''}</div>
 
-          <div class="grid two">
-            <div>
-              <label for="manualPeriod">Período</label>
-              <select id="manualPeriod">
-                <option value="FT">Partida</option>
-                <option value="HT">1º Tempo</option>
-              </select>
-            </div>
-            <div>
-              <label for="manualSide">Seleção</label>
-              <select id="manualSide">
-                <option value="Over">Over / Acima</option>
-                <option value="Under">Under / Menos</option>
-                <option value="ML">ML / Vencer</option>
-                <option value="Sim">Sim</option>
-                <option value="Não">Não</option>
-              </select>
-            </div>
-          </div>
+    <h2 style="margin-top:18px;">Por que passou/reprovou</h2>
+    <div class="box"><ul>${reasons.map(r => `<li>${r}</li>`).join('') || '<li>Sem justificativas detalhadas retornadas.</li>'}</ul></div>
 
-          <div class="grid two">
-            <div>
-              <label for="manualLine">Linha</label>
-              <input id="manualLine" inputmode="decimal" placeholder="Ex: 0.5, 1.5, -0.75" />
-            </div>
-            <div>
-              <label for="manualOdd">Odd Pinnacle</label>
-              <input id="manualOdd" inputmode="decimal" placeholder="Ex: 1.740" />
-            </div>
-          </div>
+    <details style="margin-top:16px;">
+      <summary>Ver mercados comparados</summary>
+      ${renderMarkets(s)}
+    </details>
+  `;
+  setStatus(isBet ? 'ok' : 'bad', isBet ? 'Entrada V26' : 'Não apostar');
+}
 
-          <div class="grid two">
-            <div>
-              <label for="manualCustomTeam">Outro time</label>
-              <input id="manualCustomTeam" placeholder="Use se escolher Outro..." />
-            </div>
-            <div>
-              <label for="manualPreview">Linha gerada</label>
-              <input id="manualPreview" readonly placeholder="Prévia da odd limpa" />
-            </div>
-          </div>
+function renderMarkets(s) {
+  const rows = (((s.ia_selection_internal || {}).ranking) || []).slice(0,10);
+  if (!rows.length) return '<div class="hint">Sem ranking retornado.</div>';
+  return `<table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risco</th><th>Stake</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr>
+      <td>${i+1}</td><td>${(r.market||{}).name||''}</td><td>${val((r.market||{}).odds)}</td>
+      <td>${val(r.classification)}</td><td>${pct(r.ev_percent)}</td><td>${val(r.ic)}</td>
+      <td>${pct(r.confidence)}</td><td>${pct(r.risk)}</td><td>${r.stake_units ? 'R$ '+r.stake_units+',00' : 'R$ 0,00'}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
 
-          <div class="actions">
-            <button id="manualPreviewBtn">Prévia</button>
-            <button id="manualAddBtn" class="good">Adicionar odd limpa</button>
-            <button id="manualGoldBtn">Adicionar Brasil TT HT Over 0.5</button>
-            <button id="manualGermanyHtBtn">Adicionar Alemanha -0.5 HT</button>
-          </div>
-          <div id="manualInfo" class="muted small">A linha será adicionada ao campo Odds para V26.</div>
-        </section>
+$('runBtn').addEventListener('click', async () => {
+  $('runBtn').disabled = true;
+  setStatus('', 'Rodando V26');
+  $('resultBox').innerHTML = '<div class="hint">Limpando odds, executando leitura V26 e classificando...</div>';
+  try {
+    $('oddsText').value = await backendCleanOddsText($('oddsText').value);
+    const data = await request('/analyze/ia-v26', { method:'POST', body:JSON.stringify(payload()) });
+    renderResult(data);
+  } catch (err) {
+    $('resultBox').innerHTML = `<div class="final no"><h2>Erro</h2>${err.message || err}</div>`;
+    setStatus('bad', 'Erro');
+  } finally {
+    $('runBtn').disabled = false;
+  }
+});
 
-        <section class="subcard">
-          <h2>Foto das odds Pinnacle</h2>
-          <div class="muted small">
-            Envie um ou vários prints/fotos da tela da Pinnacle. O OCR tenta extrair os mercados e joga uma sugestão para revisão.
-            Confirme sempre mercado, linha e odd antes de rodar V26.
-          </div>
-          <div class="grid two">
-            <div>
-              <label for="pinnacleImage">Prints/fotos das odds</label>
-              <input id="pinnacleImage" type="file" accept="image/*" multiple />
-            </div>
-            <div>
-              <label for="ocrMode">Modo OCR</label>
-              <select id="ocrMode">
-                <option value="pinnacle">Pinnacle / odds</option>
-                <option value="raw">Texto bruto</option>
-              </select>
-            </div>
-          </div>
-          <div class="actions">
-            <button id="ocrBtn" class="good">Ler foto das odds</button>
-            <button id="ocrUseBtn">Usar OCR no campo odds</button>
-            <button id="ocrAppendBtn">Adicionar OCR às odds</button>
-          </div>
-          <div id="ocrInfo" class="muted small">OCR local no navegador. Em foto ruim, revise manualmente.</div>
-          <label for="ocrText">Texto OCR / odds sugeridas</label>
-          <textarea id="ocrText" placeholder="O texto extraído da foto aparecerá aqui para você revisar."></textarea>
-        </section>
-
-        <label for="oddsText">Odds para V26 — limpar/revisar antes de rodar</label>
-        <textarea id="oddsText" placeholder="Cole aqui as odds ou use a foto acima..."></textarea>
-        <label for="contextText">Contexto manual / leitura mestre</label>
-        <textarea id="contextText" placeholder="Cole ou escreva aqui a leitura principal: motivação, favorito/azarão, forma, mando/fora, desfalques, ataque/defesa, ritmo, mercado e risco. Este campo prevalece sobre dados automáticos."></textarea>
-
-        <label for="newsText">Notícias / desfalques / motivação</label>
-        <textarea id="newsText" placeholder="Opcional: escalações prováveis, técnico demitido, suspensão, lesão, notícia local, necessidade de resultado, tabela."></textarea>
-
-        <div class="actions">
-          <button id="webScanBtn" class="good">Gerar Contexto IA</button>
-          <button id="v26ThinkBtn" class="primary">Gerar Contexto IA V26</button>
-        </div>
-        <div id="contextInfo" class="muted small context-note">A API faz a varredura técnica. Você revisa o Contexto Mestre antes de rodar a V26.</div>
-        <div id="scanBox"></div>
-
-        <details class="advanced">
-          <summary>Ferramentas técnicas / auditoria avançada</summary>
-
-          <label for="auxContextText">Dados auxiliares automáticos</label>
-          <textarea id="auxContextText" placeholder="Área técnica preenchida pela API. Não substitui contexto manual."></textarea>
-
-          <div class="actions">
-            <button id="contextBtn" class="good">Buscar dados auxiliares</button>
-            <button id="scanBtn" class="primary">Varredura guiada</button>
-            <button id="weightsBtn">Ver pesos</button>
-            <button id="buildMasterBtn" class="warn">Consolidar manualmente</button>
-          </div>
-
-          <label for="sourceBlocksText">Coleta por blocos</label>
-          <textarea id="sourceBlocksText" placeholder="Área técnica. Formato: fonte | tipo | confirmado? | impacto | texto"></textarea>
-          <div class="actions">
-            <button id="blocksTemplateBtn">Modelo de blocos</button>
-            <button id="blocksAnalyzeBtn" class="good">Analisar blocos</button>
-          </div>
-        </details>
-
-        <label for="finalContextText">Contexto Mestre final enviado à V26</label>
-        <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
-        <div class="split-note">
-          Regra v3.5.1: tela branca corrigida. Use Entrada Manual Pinnacle como fluxo principal. Para Alemanha x Paraguai, adicionar Alemanha -0.5 HT/HT ML e rodar V26 com backend v3.5. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
-        </div>
-
-        <div class="actions">
-          <button id="iaV26Btn" class="primary">Rodar V26</button>
-          <button id="analyzeBtn" style="display:none;">Rodar V26 Core</button>
-          <button id="parseBtn">Testar parser</button>
-          <button id="clearBtn">Limpar</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>4. Resultado</h2>
-        <div id="resultBox" class="muted">Nenhuma análise rodada ainda.</div>
-      </section>
-    </div>
-
-    <div class="footer-note">V26 Web v3.5.1 — hotfix tela branca + HT favorito. V26 decide.</div>
-  </main>
-
-  <script>
-    const $ = (id) => document.getElementById(id);
-    const apiInput = $('apiUrl');
-    const storedApi = localStorage.getItem('v26_api_url') || 'https://v26-core-api-2.onrender.com';
-    apiInput.value = storedApi;
-
-    const samples = {
-      criciuma: {
-        homeTeam: 'América-MG', awayTeam: 'Criciúma', competition: 'Brasil Série B', mode: 'pre_live',
-        oddsText: 'Criciúma Mais de 0.5 HT @1.917\nCriciúma -0.25 @2.000\nAmérica MG +0.25 @1.900\nOver 2.5 @2.100\nUnder 2.5 @1.750\nOver 9 @2.230\nUnder 9 @1.606',
-        contextText: 'Brasil Série B. Criciúma tinha valor ofensivo cedo, com pressão inicial e volume ofensivo no primeiro tempo. América-MG em casa era ressalva, por isso o mercado mais limpo era Criciúma marcar mais de 0.5 gol HT, sem exigir resultado final. Handicap Criciúma -0.25 é alternativa, mas não representa tão bem a narrativa quanto o Team Goals HT.'
-      },
-      operario: {
-        homeTeam: 'Operário Ferroviário', awayTeam: 'América Mineiro', competition: 'Brasil Série B', mode: 'pre_live',
-        oddsText: 'Operário 0.0 @1.900\nAmérica Mineiro 0.0 @1.950\nUnder 2.25 @1.892\nOver 2.25 @1.970',
-        contextText: 'Brasil Série B. Jogo com tendência de equilíbrio, baixa projeção ofensiva, ritmo esperado mais controlado, poucos sinais de jogo aberto, mercado de gols ajustado mas Under 2.25 ainda pagando bem. Linha 2.25 oferece proteção parcial em caso de exatamente 2 gols.'
-      },
-      novo: {
-        homeTeam: 'Novorizontino', awayTeam: 'Vila Nova', competition: 'Brasil Série B', mode: 'live',
-        oddsText: 'Grêmio Novorizontino -0.25 @1.819\nVila Nova +0.25 @2.000\nOver 2.5 @2.150\nUnder 2.5 @1.700',
-        contextText: 'Live no intervalo / começo do segundo tempo. Novorizontino tinha superioridade/narrativa de favorito, volume ofensivo/pressão e domínio estatístico sustentado. O mercado Novorizontino -0.25 ainda pagava 1.819 e representava melhor a leitura do que alternativas.'
-      },
-      avai: {
-        homeTeam: 'Athletic', awayTeam: 'Avaí', competition: 'Brasil Série B', mode: 'pre_live',
-        oddsText: 'Athletic @2.010\nEmpate @3.310\nAvaí @4.060\nAthletic -0.25 @1.724\nAvaí +0.25 @2.180\nUnder 2.5 @1.609\nUnder 2.25 @1.800\nUnder 2 @2.120\nOver 2.25 @2.070',
-        contextText: 'Brasil Série B. Athletic Club x Avaí. Jogo com tendência de equilíbrio e ritmo controlado. Athletic tem mando e leve favoritismo, mas chega com desfalques importantes e fase recente irregular. Avaí está em situação ruim e tem fragilidade fora de casa, mas vem de vitória recente. A leitura pré-live aponta jogo mais travado do que aberto, com Under 2.25 como mercado mais compatível, porém o preço já está mais ajustado do que em benchmarks anteriores. A linha 2.25 oferece proteção parcial em caso de exatamente 2 gols, mas a odd 1.800 não permite classificação premium sem confirmação adicional.'
-      }
-    };
-
-    function apiBase() { return apiInput.value.trim().replace(/\/+$/, ''); }
-    function setStatus(kind, text) {
-      const box = $('apiStatus');
-      const dot = box.querySelector('.dot');
-      dot.className = 'dot' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
-      box.querySelector('span:last-child').textContent = text;
+async function runOcr() {
+  const files = $('pinnacleImage').files ? Array.from($('pinnacleImage').files) : [];
+  if (!files.length) return alert('Selecione uma ou mais fotos.');
+  if (!window.Tesseract) return alert('OCR não carregou.');
+  $('ocrBtn').disabled = true;
+  const parts = [];
+  try {
+    for (let i=0;i<files.length;i++) {
+      $('ocrInfo').textContent = `Lendo foto ${i+1}/${files.length}...`;
+      const result = await Tesseract.recognize(files[i], 'eng+por');
+      parts.push(result.data.text || '');
     }
-    function moneyBR(value) {
-      if (value === null || value === undefined || value === '') return '—';
-      const n = Number(value);
-      if (!Number.isFinite(n)) return String(value);
-      return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
-    async function request(path, options = {}) {
-      const base = apiBase();
-      if (!base) throw new Error('Informe a URL da API.');
-      const res = await fetch(base + path, {
-        ...options,
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(options.headers || {}) }
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Erro ${res.status}: ${text}`);
-      }
-      return res.json();
-    }
-
-    function dedupeLines(text) {
-      const seen = new Set();
-      const out = [];
-      for (const raw of String(text || '').split(/\n+/)) {
-        const line = raw.trim();
-        if (!line) continue;
-        const key = line.toLowerCase().replace(/\s+/g, ' ');
-        if (!seen.has(key)) {
-          seen.add(key);
-          out.push(line);
-        }
-      }
-      return out.join('\n');
-    }
-
-    function normalizeOcrOdds(raw) {
-      const lines = (raw || '').split(/\n+/).map(x => x.trim()).filter(Boolean);
-      const out = [];
-      let currentMarket = '';
-      let currentTeam = '';
-
-      function cleanOdd(s) {
-        return String(s || '').replace(',', '.').replace(/[^\d.]/g, '');
-      }
-
-      function push(market, selection, line, odd, source='Pinnacle') {
-        const o = cleanOdd(odd);
-        if (!o || Number(o) < 1.01 || Number(o) > 1000) return;
-        const lineTxt = line ? ` ${line}` : '';
-        out.push(`${market} ${selection}${lineTxt} @${o} [${source}]`);
-      }
-
-      for (const rawLine of lines) {
-        const l = rawLine.replace(/[|]/g, ' ').replace(/[−–—]/g, '-').replace(/\s+/g, ' ').trim();
-        const n = l.toLowerCase();
-
-        if (/brasil/.test(n)) currentTeam = 'Brasil';
-        if (/jap[aã]o/.test(n)) currentTeam = 'Japão';
-
-        if (/acima\/abaixo|total.*gols|total da equipe|escanteios|cartões|cartoes|handicap|1x2|moneyline|classificar|ambas|empate anula|1º tempo|1 tempo/.test(n)) {
-          currentMarket = l;
-        }
-
-        // BTTS
-        const yes = l.match(/\b(sim|yes)\b\s*(\d+[.,]\d{2,3})/i);
-        const no = l.match(/\b(n[aã]o|no)\b\s*(\d+[.,]\d{2,3})/i);
-        if (yes) push('Ambas marcam', 'Sim', '', yes[2]);
-        if (no) push('Ambas marcam', 'Não', '', no[2]);
-
-        // Over/Under: o 2.5 2.120 / u 2.5 1.769
-        const ouMatches = [...l.matchAll(/\b([ou])\s*(-?\d+(?:[.,]\d+)?)\s+(\d+[.,]\d{2,3})/gi)];
-        for (const m of ouMatches) {
-          const side = m[1].toLowerCase() === 'o' ? 'Over' : 'Under';
-          const line = m[2].replace(',', '.');
-          const odd = m[3];
-          let market = 'Total gols';
-          const cm = currentMarket.toLowerCase();
-          if (/escanteio/.test(cm)) market = 'Escanteios';
-          if (/cart/.test(cm)) market = 'Cartões';
-          if (/1.?º tempo|1 tempo/.test(cm)) market = `${market} HT`;
-          if (/total da equipe/.test(cm)) {
-            const team = /brasil/i.test(currentMarket) ? 'Brasil' : (/jap[aã]o/i.test(currentMarket) ? 'Japão' : currentTeam);
-            market = `${team} Total da equipe`.trim();
-            if (/1.?º tempo|1 tempo/.test(cm)) market += ' HT';
-          }
-          push(market, side, line, odd);
-        }
-
-        // Handicap with team context.
-        if (/handicap/.test(n) || /handicap/.test(currentMarket.toLowerCase())) {
-          const hMatches = [...l.matchAll(/\b(Brasil|Jap[aã]o)?\s*([+-]\d+(?:[.,]\d+)?|0)\s+(\d+[.,]\d{2,3})/gi)];
-          for (const m of hMatches) {
-            const team = m[1] || currentTeam || '';
-            const line = m[2].replace(',', '.');
-            const odd = m[3];
-            if (team) push('Handicap', team, line, odd);
-          }
-        }
-
-        // 1x2 / ML
-        if (/1x2|moneyline|classificar/.test(currentMarket.toLowerCase()) || /\b1\s+\d+[.,]\d{2,3}/.test(l)) {
-          const ml1 = l.match(/\b1\s+(\d+[.,]\d{2,3})/i);
-          const mlx = l.match(/\bx\s+(\d+[.,]\d{2,3})/i);
-          const ml2 = l.match(/\b2\s+(\d+[.,]\d{2,3})/i);
-          if (ml1) push('Resultado', 'Brasil ML', '', ml1[1]);
-          if (mlx) push('Resultado', 'Empate ML', '', mlx[1]);
-          if (ml2) push('Resultado', 'Japão ML', '', ml2[1]);
-        }
-
-        // Classificar two-column rows: Brasil 1.325 / Japão 3.640
-        if (/classificar/.test(currentMarket.toLowerCase())) {
-          const teams = [...l.matchAll(/\b(Brasil|Jap[aã]o)\s+(\d+[.,]\d{2,3})/gi)];
-          for (const t of teams) push('Classificar', t[1], '', t[2]);
-        }
-      }
-
-      const clean = dedupeLines(out.join('\n'));
-      return clean || raw || '';
-    }
-
-    async function runPinnacleOcr() {
-      const input = $('pinnacleImage');
-      const files = input && input.files ? Array.from(input.files) : [];
-      if (!files.length) {
-        $('ocrInfo').innerHTML = '<div class="warn">Selecione uma ou mais fotos/prints primeiro.</div>';
-        return;
-      }
-      if (!window.Tesseract) {
-        $('ocrInfo').innerHTML = '<div class="error">Biblioteca OCR não carregou. Verifique internet/cache e tente atualizar.</div>';
-        return;
-      }
-      const btn = $('ocrBtn');
-      btn.disabled = true;
-      $('ocrInfo').innerHTML = `<span class="muted">Lendo ${files.length} imagem(ns)...</span>`;
-      try {
-        const allRaw = [];
-        const allNormalized = [];
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          $('ocrInfo').innerHTML = `<span class="muted">OCR imagem ${i + 1}/${files.length}...</span>`;
-          const result = await Tesseract.recognize(file, 'eng+por', {
-            logger: m => {
-              if (m && m.status) {
-                const pct = m.progress ? ` ${Math.round(m.progress * 100)}%` : '';
-                $('ocrInfo').innerHTML = `<span class="muted">Imagem ${i + 1}/${files.length}: ${m.status}${pct}</span>`;
-              }
-            }
-          });
-          const raw = result && result.data ? result.data.text : '';
-          allRaw.push(`# FOTO ${i + 1}\n${raw}`);
-          allNormalized.push(normalizeOcrOdds(raw));
-        }
-        const mode = $('ocrMode') ? $('ocrMode').value : 'pinnacle';
-        const text = mode === 'raw' ? allRaw.join('\n\n') : dedupeLines(allNormalized.join('\n'));
-        $('ocrText').value = text;
-        const count = text.split(/\n+/).filter(Boolean).length;
-        $('ocrInfo').innerHTML = `<div class="success">OCR concluído: ${files.length} foto(s), ${count} linha(s) sugerida(s). Revise antes de usar.</div>`;
-      } catch (err) {
-        $('ocrInfo').innerHTML = `<div class="error">Erro no OCR: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    if ($('ocrBtn')) $('ocrBtn').addEventListener('click', runPinnacleOcr);
-    if ($('ocrUseBtn')) $('ocrUseBtn').addEventListener('click', () => {
-      $('oddsText').value = frontendCleanOddsText(dedupeLines($('ocrText').value || ''));
-      $('ocrInfo').innerHTML = '<div class="success">Texto OCR enviado para o campo odds.</div>';
-    });
-    if ($('ocrAppendBtn')) $('ocrAppendBtn').addEventListener('click', () => {
-      const current = $('oddsText').value.trim();
-      const add = $('ocrText').value.trim();
-      $('oddsText').value = frontendCleanOddsText(dedupeLines([current, add].filter(Boolean).join('\n')));
-      $('ocrInfo').innerHTML = '<div class="success">Texto OCR adicionado às odds.</div>';
-    });
-
-    // Odds por API não é mais o fluxo principal. Oculta botões automáticos antigos se existirem.
-    window.addEventListener('load', () => {
-      ['oddsMatchBtn','oddsAdvancedBtn','oddsEventsBtn','oddsSportsBtn','oddsIoDashboardBtn','oddsIoMatchBtn','oddsIoEventsBtn','oddsIoSportsBtn','analyzeBtn','parserBtn'].forEach(id => {
-        const el = $(id);
-        if (el) el.style.display = 'none';
-      });
-    });
-
-
-
-
-    function getManualTeam() {
-      const v = $('manualTeam') ? $('manualTeam').value : '';
-      if (v === 'custom') return ($('manualCustomTeam').value || '').trim();
-      return v;
-    }
-
-    function manualBuildLine() {
-      const type = $('manualMarketType').value;
-      const team = getManualTeam();
-      const period = $('manualPeriod').value;
-      const side = $('manualSide').value;
-      const line = ($('manualLine').value || '').replace(',', '.').trim();
-      const odd = ($('manualOdd').value || '').replace(',', '.').trim();
-
-      if (!odd) return '';
-
-      let market = '';
-      const p = period === 'HT' ? ' HT' : '';
-
-      if (type === 'team_total') {
-        if (!team) return '';
-        if (!line) return '';
-        market = `${team} Total da Equipe${p} ${side} ${line}`;
-      } else if (type === 'total_goals') {
-        if (!line) return '';
-        market = `Total gols${p} ${side} ${line}`;
-      } else if (type === 'handicap') {
-        if (!team || !line) return '';
-        market = `Handicap ${team} ${line}`;
-      } else if (type === 'moneyline') {
-        if (!team) return '';
-        market = `Resultado ${team} ML`;
-      } else if (type === 'qualify') {
-        if (!team) return '';
-        market = `Classificar ${team}`;
-      } else if (type === 'btts') {
-        market = `Ambas marcam ${side}`;
-      } else if (type === 'corners') {
-        if (!line) return '';
-        market = `Escanteios${p} ${side} ${line}`;
-      } else if (type === 'cards') {
-        if (!line) return '';
-        market = `Cartões${p} ${side} ${line}`;
-      }
-
-      return `${market} @${odd} [Pinnacle]`;
-    }
-
-    function updateManualPreview() {
-      if (!$('manualPreview')) return;
-      $('manualPreview').value = manualBuildLine();
-    }
-
-    ['manualMarketType','manualTeam','manualPeriod','manualSide','manualLine','manualOdd','manualCustomTeam'].forEach(id => {
-      const el = $(id);
-      if (el) el.addEventListener('input', updateManualPreview);
-      if (el) el.addEventListener('change', updateManualPreview);
-    });
-
-    if ($('manualPreviewBtn')) $('manualPreviewBtn').addEventListener('click', () => {
-      updateManualPreview();
-      $('manualInfo').innerHTML = $('manualPreview').value
-        ? '<div class="success">Prévia gerada.</div>'
-        : '<div class="warn">Preencha mercado, linha quando aplicável e odd.</div>';
-    });
-
-    if ($('manualAddBtn')) $('manualAddBtn').addEventListener('click', () => {
-      const line = manualBuildLine();
-      if (!line) {
-        $('manualInfo').innerHTML = '<div class="warn">Preencha os campos obrigatórios antes de adicionar.</div>';
-        return;
-      }
-      const current = $('oddsText').value.trim();
-      $('oddsText').value = frontendCleanOddsText([current, line].filter(Boolean).join('\n'));
-      $('manualInfo').innerHTML = '<div class="success">Odd limpa adicionada ao V26.</div>';
-      updateManualPreview();
-    });
-
-    if ($('manualGoldBtn')) $('manualGoldBtn').addEventListener('click', () => {
-      $('manualMarketType').value = 'team_total';
-      $('manualTeam').value = 'Brasil';
-      $('manualPeriod').value = 'HT';
-      $('manualSide').value = 'Over';
-      $('manualLine').value = '0.5';
-      if (!$('manualOdd').value) $('manualOdd').value = '1.740';
-      updateManualPreview();
-      const line = manualBuildLine();
-      const current = $('oddsText').value.trim();
-      $('oddsText').value = frontendCleanOddsText([current, line].filter(Boolean).join('\n'));
-      $('manualInfo').innerHTML = '<div class="success">Brasil TT HT Over 0.5 adicionado. Ajuste a odd se necessário.</div>';
-    });
-
-
-    if ($('manualGermanyHtBtn')) $('manualGermanyHtBtn').addEventListener('click', () => {
-      const line = 'Handicap Alemanha HT -0.5 @1.769 [Pinnacle]';
-      const current = $('oddsText').value.trim();
-      $('oddsText').value = frontendCleanOddsText([current, line].filter(Boolean).join('\n'));
-      $('manualInfo').innerHTML = '<div class="success">Alemanha -0.5 HT adicionada. Ajuste a odd se necessário.</div>';
-    });
-
-
-    function frontendCleanOddsText(text) {
-      let t = String(text || '').replace(/\r/g, '\n');
-      t = t.replace(/@\s*([0-9]+(?:[.,][0-9]+)?)\s*\n\s*\[?Pinnacle\]?/gi, '@$1 [Pinnacle]');
-      t = t.replace(/\[\s*Pinnacle\s*\]/gi, '[Pinnacle]');
-      const seen = new Set();
-      const out = [];
-      for (let line of t.split(/\n+/)) {
-        line = line.trim().replace(/[−–—]/g, '-').replace(/\s+/g, ' ');
-        if (!line) continue;
-        line = line.replace(/@(\d+),(\d+)/g, '@$1.$2');
-        line = line.replace(/@(\d{4})(?=\s|$)/g, (_, x) => '@' + x[0] + '.' + x.slice(1));
-        if (line.includes('@') && !/\[Pinnacle\]/i.test(line)) line += ' [Pinnacle]';
-        if (/total da equipe/i.test(line) && /over\s+0[.,]5/i.test(line) && !/(ht|1º tempo|1 tempo|primeiro tempo)/i.test(line)) {
-          const m = line.match(/@\s*(\d+(?:\.\d+)?)/);
-          const odd = m ? Number(m[1]) : 0;
-          if (odd >= 1.45 && odd <= 2.20) {
-            line = line.replace(/(total\s+da\s+equipe)/i, '$1 HT');
-          }
-        }
-        const key = line.toLowerCase();
-        if (!seen.has(key)) {
-          seen.add(key);
-          out.push(line);
-        }
-      }
-      return out.join('\n');
-    }
-
-    async function backendCleanOddsText(text) {
-      try {
-        const data = await request('/odds/clean-pinnacle', {
-          method: 'POST',
-          body: JSON.stringify({ odds_text: text || '' })
-        });
-        if (data && data.clean_text) return data.clean_text;
-      } catch (err) {
-        // backend cleaner é auxiliar; fallback local.
-      }
-      return frontendCleanOddsText(text);
-    }
-
-
-    function payload() {
-      return {
-        home_team: $('homeTeam').value.trim(),
-        away_team: $('awayTeam').value.trim(),
-        competition: $('competition').value.trim(),
-        mode: $('mode').value,
-        odds_text: $('oddsText').value,
-        context: (($('finalContextText') && $('finalContextText').value.trim()) || $('contextText').value)
-      };
-    }
-    function contextPayload() {
-      return {
-        home_team: $('homeTeam').value.trim(),
-        away_team: $('awayTeam').value.trim(),
-        competition: $('competition').value.trim(),
-        mode: $('mode').value,
-        odds_text: $('oddsText').value,
-        market_focus: '',
-        moment: ''
-      };
-    }
-
-    function scanPayload() {
-      return {
-        home_team: $('homeTeam').value.trim(),
-        away_team: $('awayTeam').value.trim(),
-        competition: $('competition').value.trim(),
-        mode: $('mode').value,
-        odds_text: $('oddsText').value,
-        market_focus: '',
-        moment: '',
-        manual_context: $('contextText').value,
-        news_context: $('newsText') ? $('newsText').value : '',
-        aux_context: $('auxContextText') ? $('auxContextText').value : ''
-      };
-    }
-
-    function classSpan(cls) {
-      return `<span class="class-${String(cls).replace('+','\\+')}" style="font-weight:900">${cls}</span>`;
-    }
-    function renderResult(data) {
-      const b = data.best;
-      const m = b.market;
-      const rows = (data.markets || []).map((ev, idx) => `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${ev.market.name}</td>
-          <td>${Number(ev.market.odds).toFixed(3)}</td>
-          <td>${classSpan(ev.classification)}</td>
-          <td>${Number(ev.ev_percent).toFixed(1)}%</td>
-          <td>${ev.ic}</td>
-          <td>${ev.confidence}%</td>
-          <td>${ev.risk}%</td>
-          <td>${moneyBR(ev.stake_units)}</td>
-        </tr>
-      `).join('');
-      const decisionBox = data.decision ? `
-        <div class="${data.decision === 'NO_BET' ? 'warn' : 'success'}" style="margin-bottom:12px;">
-          <b>${data.decision_label || data.decision}</b><br>
-          ${data.operational_alert || ''}
-        </div>
-      ` : '';
-      $('resultBox').innerHTML = `
-        ${decisionBox}
-        <div class="result-hero">
-          <div class="pill">${data.match} · ${data.mode}</div>
-          <p class="market">${m.name}</p>
-          <div class="muted">Odd ${Number(m.odds).toFixed(3)} · ${m.market_type}</div>
-          <div class="metrics">
-            <div class="metric"><b>${classSpan(b.classification)}</b><span>Classe</span></div>
-            <div class="metric"><b>${Number(b.ev_percent).toFixed(1)}%</b><span>EV</span></div>
-            <div class="metric"><b>${b.ic}/100</b><span>IC</span></div>
-            <div class="metric"><b>${b.confidence}%</b><span>Confidence</span></div>
-            <div class="metric"><b>${b.risk}%</b><span>Risk</span></div>
-            <div class="metric"><b>${moneyBR(b.stake_units)}</b><span>Stake sugerida</span></div>
-          </div>
-        </div>
-        <h2 style="margin-top:16px;">Narrativa</h2>
-        <p class="muted">${data.narrative || 'Sem narrativa.'}</p>
-        ${(data.alerts && data.alerts.length) ? `<h2>Alertas</h2><ul>${data.alerts.map(a=>`<li>${a}</li>`).join('')}</ul>` : ''}
-        <h2>Ranking de mercados</h2>
-        <table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risk</th><th>Stake sugerida</th></tr></thead><tbody>${rows}</tbody></table>
-      `;
-    }
-    function renderParse(data) {
-      const rows = (data.markets || []).map((m, idx) => `<tr><td>${idx+1}</td><td>${m.name}</td><td>${m.odds}</td><td>${m.market_type}</td><td>${m.line ?? ''}</td><td>${m.period}</td></tr>`).join('');
-      $('resultBox').innerHTML = `<div class="success">Parser reconheceu ${data.recognized_markets} mercados.</div><table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Tipo</th><th>Linha</th><th>Período</th></tr></thead><tbody>${rows}</tbody></table>`;
-    }
-    function renderError(err) {
-      $('resultBox').innerHTML = `<div class="error">${err.message || err}</div>`;
-      setStatus('err', 'Erro');
-    }
-    document.querySelectorAll('[data-sample]').forEach(btn => btn.addEventListener('click', () => {
-      const s = samples[btn.dataset.sample];
-      $('homeTeam').value = s.homeTeam;
-      $('awayTeam').value = s.awayTeam;
-      $('competition').value = s.competition;
-      $('mode').value = s.mode;
-      $('oddsText').value = s.oddsText;
-      $('contextText').value = s.contextText;
-      if ($('newsText')) $('newsText').value = '';
-      if ($('auxContextText')) $('auxContextText').value = '';
-      if ($('finalContextText')) $('finalContextText').value = '';
-      $('contextInfo').innerHTML = '<span class="muted">Contexto do benchmark preenchido como leitura mestre. Revise e consolide antes de rodar a V26.</span>';
-      $('resultBox').innerHTML = '<span class="muted">Benchmark preenchido. Toque em Rodar V26 Core.</span>';
-    }));
-    $('saveApi').addEventListener('click', () => {
-      const cleanUrl = apiBase();
-      apiInput.value = cleanUrl;
-      localStorage.setItem('v26_api_url', cleanUrl);
-      setStatus('warn', 'API salva');
-    });
-    $('testApi').addEventListener('click', async () => {
-      try {
-        const data = await request('/health');
-        setStatus('ok', `Conexão OK com a V26 Core API · ${data.version || ''}`);
-      } catch (err) {
-        setStatus('err', `Erro ao conectar com a API: ${err.message || err}`);
-      }
-    });
-
-    function renderScanLinks(data) {
-      const links = data.links || [];
-      const topLinks = links.slice(0, 12).map((l, idx) => `
-        <a class="scan-link" href="${l.url}" target="_blank" rel="noopener">
-          <b>${idx + 1}. [${l.priority}] ${l.title}</b>
-          <span>${l.category} · peso ${l.weight}</span>
-        </a>
-      `).join('');
-      $('scanBox').innerHTML = `
-        <div class="scan-box">
-          <b>Varredura IA v1.8 pronta · Confiança do contexto: ${data.source_confidence || '—'}</b>
-          <div class="muted" style="margin-top:6px;">Foram gerados ${links.length} links/perguntas. Abra os principais, confirme notícias/desfalques e ajuste o Contexto Mestre antes de rodar a V26.</div>
-          <div class="scan-links">${topLinks}</div>
-        </div>
-      `;
-    }
-
-
-
-
-
-    function todayIso() {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    }
-
-    if ($('agendaDate') && !$('agendaDate').value) $('agendaDate').value = todayIso();
-
-    function fmtUtc(iso) {
-      if (!iso) return '';
-      try {
-        return new Date(iso).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-      } catch (_) {
-        return iso;
-      }
-    }
-
-    function selectAgendaMatch(m) {
-      $('homeTeam').value = m.home_team || '';
-      $('awayTeam').value = m.away_team || '';
-      $('competition').value = m.competition_name || m.competition_code || '';
-      if ($('oddsSportKey')) $('oddsSportKey').value = sportKeyFromCompetition(m.competition_code || m.competition_name || '');
-      const line = `Jogo selecionado pela agenda: ${m.home_team} x ${m.away_team} · ${m.competition_name || ''} · ${fmtUtc(m.utc_date)} · fixture_id ${m.fixture_id} · fonte ${m.source || 'agenda'}.`;
-      const current = $('contextText').value.trim();
-      $('contextText').value = current ? `${current}\n\n${line}` : line;
-      $('agendaInfo').innerHTML = `<div class="success">Jogo selecionado: ${m.home_team} x ${m.away_team}. Agora gere o Contexto IA ou rode a V26.</div>`;
-      setStatus('ok', 'Jogo selecionado');
-      document.getElementById('homeTeam').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    function renderAgenda(data) {
-      const matches = data.matches || [];
-      if (!matches.length) {
-        $('agendaBox').innerHTML = '<div class="info-box">Nenhum jogo retornado. Verifique data, competição, token ou cobertura do plano.</div>';
-        return;
-      }
-      $('agendaBox').innerHTML = matches.map((m, idx) => `
-        <div class="match-card">
-          <b>${m.home_team} x ${m.away_team}</b>
-          <span>${m.competition_name || 'Competição'} · ${fmtUtc(m.utc_date)} · ${m.status || ''}</span>
-          <span>${m.area_name || ''}${m.matchday ? ' · rodada ' + m.matchday : ''} · Fonte: ${m.source || 'agenda'}</span>
-          <button class="primary" data-match-idx="${idx}">Analisar este jogo</button>
-        </div>
-      `).join('');
-
-      [...document.querySelectorAll('[data-match-idx]')].forEach(btn => {
-        btn.addEventListener('click', () => selectAgendaMatch(matches[Number(btn.dataset.matchIdx)]));
-      });
-    }
-
-
-    function renderCompetitions(data) {
-      const comps = data.competitions || [];
-      if (!comps.length) {
-        $('agendaBox').innerHTML = '<div class="info-box">Nenhuma competição retornada pelo token.</div>';
-        return;
-      }
-      $('agendaBox').innerHTML = comps.map(c => `
-        <div class="match-card">
-          <b>${c.name} ${c.code ? '(' + c.code + ')' : ''}</b>
-          <span>${c.area_name || ''} · ${c.type || ''}</span>
-          <button data-comp-code="${c.code || c.id}">Usar esta competição</button>
-        </div>
-      `).join('');
-      [...document.querySelectorAll('[data-comp-code]')].forEach(btn => {
-        btn.addEventListener('click', () => {
-          $('agendaCompetition').value = btn.dataset.compCode || '';
-          $('agendaInfo').innerHTML = '<div class="success">Competição preenchida. Agora carregue os jogos do dia.</div>';
-        });
-      });
-    }
-
-    if ($('competitionsBtn')) $('competitionsBtn').addEventListener('click', async () => {
-      const info = $('agendaInfo');
-      const btn = $('competitionsBtn');
-      btn.disabled = true;
-      info.innerHTML = '<span class="muted">Carregando competições...</span>';
-      try {
-        const data = await request('/agenda/competitions');
-        renderCompetitions(data);
-        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        if (data.status === 'ok') {
-          info.innerHTML = `<div class="success">Competições carregadas: ${(data.competitions || []).length}.${warningText}</div>`;
-          setStatus('ok', 'Competições ok');
-        } else {
-          info.innerHTML = `<div class="warn">Não foi possível carregar competições.${warningText}</div>`;
-          setStatus('warn', 'Competições pendentes');
-        }
-      } catch (err) {
-        info.innerHTML = `<div class="error">Erro ao carregar competições: ${err.message || err}</div>`;
-        setStatus('err', 'Erro competições');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-
-    if ($('agendaBtn')) $('agendaBtn').addEventListener('click', async () => {
-      const info = $('agendaInfo');
-      const btn = $('agendaBtn');
-      btn.disabled = true;
-      info.innerHTML = '<span class="muted">Carregando agenda...</span>';
-      try {
-        const date = encodeURIComponent($('agendaDate').value || todayIso());
-        const comp = encodeURIComponent($('agendaCompetition').value.trim());
-        const data = await request(`/agenda?date=${date}&competition=${comp}&limit=100`);
-        renderAgenda(data);
-        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        if (data.status === 'setup_required') {
-          info.innerHTML = `<div class="warn">Agenda instalada, mas falta FOOTBALL_DATA_TOKEN no Render.${warningText}</div>`;
-          setStatus('warn', 'Agenda pendente');
-        } else if (data.status === 'ok') {
-          info.innerHTML = `<div class="success">Dashboard atualizado: ${(data.matches || []).length} jogos encontrados. Fonte: ${(data.metadata || {}).provider || 'agenda'}.${warningText}</div>`;
-          setStatus('ok', 'Agenda ok');
-        } else {
-          info.innerHTML = `<div class="error">Erro na agenda.${warningText}</div>`;
-          setStatus('err', 'Erro agenda');
-        }
-      } catch (err) {
-        info.innerHTML = `<div class="error">Erro ao carregar agenda: ${err.message || err}</div>`;
-        setStatus('err', 'Erro agenda');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-
-    function loadAgendaWithFilter(filterValue) {
-      if ($('agendaCompetition')) $('agendaCompetition').value = filterValue || '';
-      if ($('agendaBtn')) $('agendaBtn').click();
-    }
-
-    [...document.querySelectorAll('.filterBtn')].forEach(btn => {
-      btn.addEventListener('click', () => loadAgendaWithFilter(btn.dataset.agendaFilter || ''));
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        if ($('agendaBtn')) $('agendaBtn').click();
-      }, 350);
-    });
-
-
-    function sportKeyFromCompetition(comp) {
-      const c = (comp || '').toLowerCase();
-      if (c.includes('br_serie_b') || c.includes('serie b') || c.includes('série b') || c.includes('brazilian serie b')) return 'soccer_brazil_serie_b';
-      if (c.includes('bsa') || c.includes('serie a') || c.includes('série a') || c.includes('campeonato brasileiro')) return 'soccer_brazil_campeonato';
-      if (c.includes('pl') || c.includes('premier')) return 'soccer_epl';
-      if (c.includes('cl') || c.includes('champions')) return 'soccer_uefa_champs_league';
-      if (c.includes('bundesliga') || c.includes('bl1')) return 'soccer_germany_bundesliga';
-      if (c.includes('liga') && c.includes('spain')) return 'soccer_spain_la_liga';
-      return '';
-    }
-
-    function oddsParamsBase() {
-      const sportKey = ($('oddsSportKey') && $('oddsSportKey').value.trim()) || sportKeyFromCompetition($('competition').value);
-      const regions = ($('oddsRegions') && $('oddsRegions').value.trim()) || 'eu,uk,us';
-      const markets = ($('oddsMarkets') && $('oddsMarkets').value.trim()) || 'h2h,spreads,totals';
-      const bookmakers = ($('oddsBookmakers') && $('oddsBookmakers').value.trim()) || '';
-      const advancedMarkets = ($('oddsAdvancedMarkets') && $('oddsAdvancedMarkets').value.trim()) || 'h2h,spreads,totals,btts,draw_no_bet,alternate_spreads,alternate_totals';
-      return { sportKey, regions, markets, bookmakers, advancedMarkets };
-    }
-
-    function renderOddsMatch(data) {
-      const box = $('oddsBox');
-      const info = $('oddsInfo');
-      const warnings = (data.warnings || []).join(' ');
-      if (data.status === 'setup_required') {
-        info.innerHTML = `<div class="warn">Falta THE_ODDS_API_KEY no Render.</div>`;
-        return;
-      }
-      if (data.status !== 'ok') {
-        box.innerHTML = '<div class="info-box">Nenhuma odd encontrada para esse jogo. Tente sport_key, bookmaker ou região diferente.</div>';
-        info.innerHTML = `<div class="warn">${warnings}</div>`;
-        return;
-      }
-      const match = data.match || {};
-      $('oddsText').value = data.odds_text || $('oddsText').value;
-      const quota = (data.metadata || {}).quota_remaining ? ` · cota restante: ${(data.metadata || {}).quota_remaining}` : '';
-      info.innerHTML = `<div class="success">Odds encontradas para ${match.home_team} x ${match.away_team}.${quota}</div>`;
-      const summary = data.market_summary || {};
-      const summaryHtml = Object.keys(summary).length ? `
-        <div class="odds-row">
-          <b>Mercados encontrados</b>
-          <span>${Object.keys(summary).map(k => `${summary[k].label || k}: ${summary[k].bookmakers || 0} books`).join(' · ')}</span>
-        </div>
-      ` : '';
-      const books = (match.bookmakers || []).slice(0, 6).map(b => {
-        const markets = (b.markets || []).map(m => {
-          const outs = (m.outcomes || []).slice(0, 6).map(o => {
-            const point = (o.point === undefined || o.point === null) ? '' : ` ${o.point}`;
-            return `<span class="odds-pill">${o.name}${point} @${o.price}</span>`;
-          }).join('');
-          return `<div><b>${m.label || m.key}</b><div>${outs}</div></div>`;
-        }).join('');
-        return `<div class="odds-row"><b>${b.title || b.key}</b><span>Atualizado: ${b.last_update || ''}</span>${markets}</div>`;
-      }).join('');
-      box.innerHTML = summaryHtml + (books || '<div class="info-box">Odds convertidas no campo Odds, mas sem resumo visual.</div>');
-    }
-
-    function renderOddsEvents(data) {
-      const events = data.events || [];
-      const box = $('oddsBox');
-      if (!events.length) {
-        box.innerHTML = '<div class="info-box">Nenhum evento com odds retornado.</div>';
-        return;
-      }
-      box.innerHTML = events.slice(0, 20).map((e, idx) => `
-        <div class="odds-row">
-          <b>${e.home_team} x ${e.away_team}</b>
-          <span>${e.sport_title || data.sport_key || ''} · ${fmtUtc(e.commence_time)} · bookmakers: ${(e.bookmakers || []).length}</span>
-          <button data-odds-event="${idx}">Usar este jogo</button>
-        </div>
-      `).join('');
-      [...document.querySelectorAll('[data-odds-event]')].forEach(btn => {
-        btn.addEventListener('click', () => {
-          const e = events[Number(btn.dataset.oddsEvent)];
-          $('homeTeam').value = e.home_team || '';
-          $('awayTeam').value = e.away_team || '';
-          $('competition').value = e.sport_title || $('competition').value;
-          if ($('oddsSportKey')) $('oddsSportKey').value = e.sport_key || '';
-          $('oddsInfo').innerHTML = `<div class="success">Jogo preenchido pelas odds. Agora toque em Buscar odds do jogo.</div>`;
-        });
-      });
-    }
-
-    function renderSportsKeys(data) {
-      const sports = data.sports || [];
-      $('oddsBox').innerHTML = sports.slice(0, 40).map(s => `
-        <div class="odds-row">
-          <b>${s.title || s.description || s.key}</b>
-          <span>${s.key} · ${s.group || ''}</span>
-          <button data-sport-key="${s.key}">Usar sport_key</button>
-        </div>
-      `).join('') || '<div class="info-box">Nenhum sport key retornado.</div>';
-      [...document.querySelectorAll('[data-sport-key]')].forEach(btn => {
-        btn.addEventListener('click', () => {
-          $('oddsSportKey').value = btn.dataset.sportKey || '';
-          $('oddsInfo').innerHTML = '<div class="success">Sport key preenchida. Agora busque eventos ou odds do jogo.</div>';
-        });
-      });
-    }
-
-    async function fetchOddsMatch(advanced = false) {
-      const btn = advanced ? $('oddsAdvancedBtn') : $('oddsMatchBtn');
-      btn.disabled = true;
-      $('oddsInfo').innerHTML = `<span class="muted">Buscando odds ${advanced ? 'avançadas' : 'básicas'}...</span>`;
-      try {
-        const { sportKey, regions, markets, bookmakers, advancedMarkets } = oddsParamsBase();
-        const qs = new URLSearchParams({
-          home: $('homeTeam').value.trim(),
-          away: $('awayTeam').value.trim(),
-          sport_key: sportKey,
-          competition: $('competition').value.trim(),
-          regions,
-          markets,
-          bookmakers,
-          advanced: advanced ? 'true' : 'false',
-          advanced_markets: advancedMarkets
-        });
-        const data = await request(`/odds/match?${qs.toString()}`);
-        renderOddsMatch(data);
-      } catch (err) {
-        $('oddsInfo').innerHTML = `<div class="error">Erro ao buscar odds: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    if ($('oddsMatchBtn')) $('oddsMatchBtn').addEventListener('click', () => fetchOddsMatch(false));
-    if ($('oddsAdvancedBtn')) $('oddsAdvancedBtn').addEventListener('click', () => fetchOddsMatch(true));
-
-    if ($('oddsEventsBtn')) $('oddsEventsBtn').addEventListener('click', async () => {
-      const btn = $('oddsEventsBtn');
-      btn.disabled = true;
-      $('oddsInfo').innerHTML = '<span class="muted">Carregando eventos com odds...</span>';
-      try {
-        const { sportKey, regions, markets, bookmakers } = oddsParamsBase();
-        const qs = new URLSearchParams({
-          sport_key: sportKey,
-          competition: $('competition').value.trim(),
-          regions, markets, bookmakers, limit: '80'
-        });
-        const data = await request(`/odds/events?${qs.toString()}`);
-        renderOddsEvents(data);
-        const quota = (data.metadata || {}).quota_remaining ? ` Cota restante: ${(data.metadata || {}).quota_remaining}.` : '';
-        $('oddsInfo').innerHTML = `<div class="success">Eventos carregados: ${(data.events || []).length}.${quota}</div>`;
-      } catch (err) {
-        $('oddsInfo').innerHTML = `<div class="error">Erro ao listar eventos: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    if ($('oddsSportsBtn')) $('oddsSportsBtn').addEventListener('click', async () => {
-      const btn = $('oddsSportsBtn');
-      btn.disabled = true;
-      $('oddsInfo').innerHTML = '<span class="muted">Carregando sports keys...</span>';
-      try {
-        const data = await request('/odds/sports');
-        renderSportsKeys(data);
-        $('oddsInfo').innerHTML = `<div class="success">Sports keys carregadas: ${(data.sports || []).length}.</div>`;
-      } catch (err) {
-        $('oddsInfo').innerHTML = `<div class="error">Erro ao carregar sports keys: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-
-
-    function renderV26Think(data) {
-      const box = $('scanBox');
-      const narrative = data.narrative_synthesis || {};
-      const findings = narrative.what_ia_found || [];
-      const hypotheses = narrative.market_hypotheses || [];
-      const marketRead = narrative.market_read || {};
-      const caveats = narrative.caveats || [];
-      const marketFirst = narrative.market_first_reading || {};
-      const doctrine = data.v26_doctrine || narrative.v26_doctrine_applied || {};
-      const marketDoctrine = data.market_doctrine || narrative.market_doctrine || {};
-      const gates = data.gates || [];
-      const missing = data.missing_questions || [];
-      const sources = data.source_panel || {};
-      const scanMeta = ((data.web_scan || {}).metadata || {});
-      const scanStatus = ((data.web_scan || {}).status || data.status || '');
-      const realSearch = scanStatus !== 'setup_required' && scanMeta.setup_required !== true;
-      const searchAudit = realSearch
-        ? `Busca real: SIM · brutos: ${scanMeta.raw_results_count ?? 0} · relevantes: ${scanMeta.relevant_results_count ?? 0} · finais: ${scanMeta.deduped_results_count ?? 0}`
-        : 'Busca real: NÃO · falta TAVILY_API_KEY ou a busca não executou.';
-
-      const findingRows = findings.length ? findings.map(f => `
-        <div class="scan-link">
-          <b>${f.tema} · ${f.alvo}</b>
-          <span>${f.leitura || ''}</span>
-          ${(f.evidencias || []).slice(0,2).map(ev => `<span>• ${ev}</span>`).join('')}
-          ${(f.fontes || []).slice(0,2).map(src => `<span>Fonte: ${src.fonte || ''} — ${src.trecho || ''}</span>`).join('')}
-        </div>
-      `).join('') : '<div class="info-box">A IA não encontrou achados fortes; revise fontes ou contexto manual.</div>';
-
-      const hypothesisRows = hypotheses.length ? hypotheses.map(h => `
-        <div class="scan-link">
-          <b>${h.mercado || 'Hipótese'}</b>
-          <span>${h.por_que || ''}</span>
-          <span>Condição: ${h.condicao || ''}</span>
-          <span>Status: ${h.status || ''}</span>
-        </div>
-      `).join('') : '<div class="info-box">Nenhuma hipótese de mercado gerada.</div>';
-
-      const usableMarkets = (marketRead.usable_markets_reference || []).slice(0,10).map(m => `
-        <div class="scan-link"><b>Referência</b><span>${m.raw || ''}</span></div>
-      `).join('');
-      const blockedMarkets = (marketRead.blocked_extreme_markets || []).slice(0,10).map(m => `
-        <div class="scan-link"><b>Bloqueado/extremo</b><span>${m.raw || ''}</span></div>
-      `).join('');
-
-      const gateRows = gates.map(g => `
-        <div class="scan-link">
-          <b>${g.passed ? 'OK' : 'TRAVA'} · ${g.name}</b>
-          <span>${g.message}</span>
-          <span>Ação: ${g.action}</span>
-        </div>
-      `).join('');
-
-      const missingRows = missing.map(q => `<li>${q}</li>`).join('');
-      const sourceRows = Object.entries(sources.domains || {}).map(([d, n]) => `<span class="pill">${d}: ${n}</span>`).join('');
-      const caveatRows = caveats.map(c => `<li>${c}</li>`).join('');
-
-      box.innerHTML = `
-        <div class="info-box">
-          <b>Doutrina V26 aplicada</b><br>
-          Odds = mercado/dinheiro. Contexto = busca de vantagem contra o preço. EV = probabilidade real acima da probabilidade implícita.<br><br>
-          <b>Mercado primeiro</b><br>
-          ${marketFirst.headline || marketDoctrine.reading || 'Sem leitura de mercado inicial.'}<br>
-          ${marketFirst.reading || ''}<br>
-          Ação: ${marketFirst.action || ''}<br><br>
-          <b>Leitura IA do jogo</b><br>
-          ${searchAudit}<br><br>
-          <b>${narrative.headline || 'Sem resumo narrativo.'}</b><br>
-          ${narrative.reading || ''}<br><br>
-          Teto contextual: <b>${data.context_cap || 'N/D'}</b><br>
-          Próxima ação: ${data.recommended_next_action || ''}
-        </div>
-
-        <h3>O que a IA encontrou</h3>
-        ${findingRows}
-
-        <h3>Leitura de mercado</h3>
-        <div class="info-box">${marketRead.leitura || 'Sem leitura de mercado.'}</div>
-        ${usableMarkets}
-        ${blockedMarkets}
-
-        <h3>Hipóteses para o V26 Core</h3>
-        ${hypothesisRows}
-
-        <h3>Travas V26</h3>
-        ${gateRows || '<div class="info-box">Sem travas retornadas.</div>'}
-
-        <h3>Perguntas pendentes</h3>
-        <div class="info-box"><ul>${missingRows}</ul></div>
-
-        <h3>Fontes</h3>
-        <div class="info-box">${sourceRows || 'Sem domínios fortes retornados.'}<br>${sources.leitura_v26 || ''}</div>
-
-        <h3>Alertas</h3>
-        <div class="info-box"><ul>${caveatRows}</ul></div>
-      `;
-
-      if ($('finalContextText')) {
-        $('finalContextText').value = data.context_master || '';
-      }
-      $('contextInfo').innerHTML = `<div class="success">Contexto IA narrativo pronto. Revise hipóteses e rode V26 Core só com mercado limpo.</div>`;
-    }
-
-    if ($('v26ThinkBtn')) $('v26ThinkBtn').addEventListener('click', async () => {
-      const btn = $('v26ThinkBtn');
-      btn.disabled = true;
-      $('contextInfo').innerHTML = '<span class="muted">Gerando Contexto IA V26 com travas...</span>';
-      try {
-        const data = await request('/context/v26-think', {
-          method: 'POST',
-          body: JSON.stringify(webScanPayload())
-        });
-        renderV26Think(data);
-      } catch (err) {
-        $('contextInfo').innerHTML = `<div class="error">Erro no Contexto IA V26: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-
-    function webScanPayload() {
-      return {
-        home_team: $('homeTeam').value.trim(),
-        away_team: $('awayTeam').value.trim(),
-        competition: $('competition').value.trim(),
-        mode: $('mode').value,
-        odds_text: $('oddsText').value,
-        market_focus: '',
-        manual_context: $('contextText').value,
-        current_context_master: $('finalContextText') ? $('finalContextText').value : '',
-        max_queries: 8,
-        max_results_per_query: 4
-      };
-    }
-
-    function renderWebScan(data) {
-      const results = data.results || [];
-      const blocks = data.blocks || [];
-      const resultRows = results.slice(0, 12).map((r, idx) => `
-        <a class="scan-link" href="${r.url}" target="_blank" rel="noopener">
-          <b>${idx + 1}. ${r.title || r.domain}</b>
-          <span>${r.domain} · ${r.query}</span>
-          <span>${(r.content || '').slice(0, 180)}</span>
-        </a>
-      `).join('');
-      const blockRows = blocks.slice(0, 10).map(b => `
-        <div class="scan-link">
-          <b>${b.score} pts · ${b.tier} · ${b.source_label}</b>
-          <span>${b.info_type} · ${b.confirmed ? 'confirmado' : 'não confirmado'} · ${b.impact_label}</span>
-          <span>${b.text.slice(0, 220)}</span>
-        </div>
-      `).join('');
-      const setup = data.status === 'setup_required';
-      const googleLinks = ((data.metadata || {}).google_links || []).map((url, idx) => `
-        <a class="scan-link" href="${url}" target="_blank" rel="noopener">
-          <b>${idx + 1}. Busca manual sugerida</b>
-          <span>${(data.queries || [])[idx] || url}</span>
-        </a>
-      `).join('');
-
-      $('scanBox').innerHTML = `
-        <div class="scan-box">
-          <b>${setup ? 'Configuração necessária' : 'Contexto IA concluída'} · Confiança ${data.source_confidence || '—'} · Teto ${data.context_cap || '—'}</b>
-          <div class="muted" style="margin-top:6px;">
-            ${setup ? 'Adicione TAVILY_API_KEY no Render para ativar a busca automática real.' : 'Resultados web convertidos em blocos ponderados. Revise antes de rodar a V26.'}
-          </div>
-          ${setup ? `<div class="scan-links">${googleLinks}</div>` : `<div class="scan-links">${resultRows}</div><div class="scan-links">${blockRows}</div>`}
-        </div>
-      `;
-    }
-
-    if ($('webScanBtn')) $('webScanBtn').addEventListener('click', async () => {
-      const info = $('contextInfo');
-      const btn = $('webScanBtn');
-      btn.disabled = true;
-      info.innerHTML = '<span class="muted">Gerando Contexto IA...</span>';
-      try {
-        const data = await request('/context/scan-web', { method: 'POST', body: JSON.stringify(webScanPayload()) });
-        if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
-        if ($('sourceBlocksText') && (data.blocks || []).length) {
-          $('sourceBlocksText').value = (data.blocks || []).map(b => {
-            const confirmed = b.confirmed ? 'sim' : 'não';
-            return `${b.source_key} | ${b.info_type} | ${confirmed} | ${b.impact} | ${b.text}`;
-          }).join('\n');
-        }
-        renderWebScan(data);
-        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        if (data.status === 'setup_required') {
-          info.innerHTML = `<div class="warn">Contexto IA instalada, mas precisa da chave TAVILY_API_KEY no Render.${warningText}</div>`;
-          setStatus('warn', 'Tavily pendente');
-        } else {
-          info.innerHTML = `<div class="success">Contexto IA executada. Contexto Mestre atualizado.${warningText}</div>`;
-          setStatus('ok', 'Web scan ok');
-        }
-      } catch (err) {
-        info.innerHTML = `<div class="error">Erro ao gerar Contexto IA: ${err.message || err}</div>`;
-        setStatus('err', 'Erro web scan');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    const SOURCE_ALIASES = {
-      'espn': 'espn',
-      'ge': 'ge_globo',
-      'globo': 'ge_globo',
-      'globoesporte': 'ge_globo',
-      'ge/globo': 'ge_globo',
-      'jornal': 'local_news',
-      'local': 'local_news',
-      'noticia local': 'local_news',
-      'oficial': 'club_official',
-      'clube': 'club_official',
-      'pinnacle': 'pinnacle_market',
-      'odds': 'pinnacle_market',
-      'mercado': 'pinnacle_market',
-      'sofascore': 'sofascore_pre',
-      'sofascore live': 'sofascore_live',
-      'footystats': 'footystats',
-      'academia': 'academia',
-      'academia das apostas': 'academia',
-      'sportytrader': 'sportytrader',
-      'windrawwin': 'windrawwin',
-      'thesportsdb': 'thesportsdb'
-    };
-
-    function normKey(s) {
-      return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    }
-
-    function parseConfirmed(s) {
-      const v = normKey(s);
-      return ['sim','s','yes','y','confirmado','true','1'].includes(v);
-    }
-
-    function parseBlocksText() {
-      const text = $('sourceBlocksText') ? $('sourceBlocksText').value : '';
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-      return lines.map(line => {
-        const parts = line.split('|').map(p => p.trim());
-        const sourceRaw = parts[0] || 'generic_preview';
-        return {
-          source_key: SOURCE_ALIASES[normKey(sourceRaw)] || normKey(sourceRaw).replace(/\s+/g, '_') || 'generic_preview',
-          info_type: parts[1] || '',
-          confirmed: parseConfirmed(parts[2] || ''),
-          impact: normKey(parts[3] || 'neutral').replace(/\s+/g, '_'),
-          text: parts.slice(4).join(' | ') || line
-        };
-      }).filter(b => b.text);
-    }
-
-    function blocksPayload() {
-      return {
-        home_team: $('homeTeam').value.trim(),
-        away_team: $('awayTeam').value.trim(),
-        competition: $('competition').value.trim(),
-        mode: $('mode').value,
-        odds_text: $('oddsText').value,
-        market_focus: '',
-        manual_context: $('contextText').value,
-        current_context_master: $('finalContextText') ? $('finalContextText').value : '',
-        blocks: parseBlocksText()
-      };
-    }
-
-    function renderBlocks(data) {
-      const rows = (data.blocks || []).map(b => `
-        <div class="scan-link">
-          <b>${b.score} pts · ${b.tier} · ${b.source_label}</b>
-          <span>${b.info_type} · ${b.confirmed ? 'confirmado' : 'não confirmado'} · ${b.impact_label}</span>
-          <span>${b.text}</span>
-        </div>
-      `).join('');
-      const conflicts = (data.conflicts || []).map(c => `<div class="error" style="margin-top:8px;">${c.area}: ${c.conflict} — ${c.action}</div>`).join('');
-      $('scanBox').innerHTML = `
-        <div class="scan-box">
-          <b>Coleta por blocos v1.7 · Nota ${data.context_grade || '—'} · Teto ${data.context_cap || '—'} · ${data.total_source_score || 0}/100</b>
-          <div class="muted" style="margin-top:6px;">Cada achado foi ponderado pela matriz de fontes. Revise conflitos antes de rodar a V26.</div>
-          ${conflicts}
-          <div class="scan-links">${rows}</div>
-        </div>
-      `;
-    }
-
-    if ($('blocksTemplateBtn')) $('blocksTemplateBtn').addEventListener('click', () => {
-      $('sourceBlocksText').value = [
-        'ESPN | desfalque_confirmado | sim | under | ',
-        'GE | escalação_confirmada | sim | neutral | ',
-        'SofaScore | estatistica_pre_jogo | não | under | ',
-        'FootyStats | estatistica_pre_jogo | não | under | ',
-        'Academia | prognostico | não | under | ',
-        'Pinnacle | odds_mercado | sim | neutral | ',
-        'Jornal local | motivacao_tabela | sim | risk | '
-      ].join('\n');
-      $('contextInfo').innerHTML = '<div class="success">Modelo de blocos inserido. Complete o texto de cada linha.</div>';
-    });
-
-    if ($('blocksAnalyzeBtn')) $('blocksAnalyzeBtn').addEventListener('click', async () => {
-      const info = $('contextInfo');
-      const btn = $('blocksAnalyzeBtn');
-      btn.disabled = true;
-      info.innerHTML = '<span class="muted">Analisando blocos v1.7...</span>';
-      try {
-        const data = await request('/context/blocks/analyze', { method: 'POST', body: JSON.stringify(blocksPayload()) });
-        if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
-        renderBlocks(data);
-        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        info.innerHTML = `<div class="success">Blocos analisados. Contexto Mestre ponderado atualizado.${warningText}</div>`;
-        setStatus('ok', 'Blocos analisados');
-      } catch (err) {
-        info.innerHTML = `<div class="error">Erro ao analisar blocos: ${err.message || err}</div>`;
-        setStatus('err', 'Erro nos blocos');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    function renderWeights(data) {
-      const rows = (data.sources || []).map(s => `
-        <div class="scan-link">
-          <b>${s.label}</b>
-          <span>Tier ${s.tier} · peso ${s.default_weight} · teto ${s.max_weight}</span>
-          <span>${s.notes}</span>
-        </div>
-      `).join('');
-      $('scanBox').innerHTML = `
-        <div class="scan-box">
-          <b>Matriz de Pesos v1.6</b>
-          <div class="muted" style="margin-top:6px;">Peso mede força do contexto/fonte, não valor da aposta. Fonte fraca isolada não sobe classe.</div>
-          <div class="scan-links">${rows}</div>
-        </div>
-      `;
-    }
-
-    if ($('weightsBtn')) $('weightsBtn').addEventListener('click', async () => {
-      const info = $('contextInfo');
-      const btn = $('weightsBtn');
-      btn.disabled = true;
-      info.innerHTML = '<span class="muted">Carregando matriz de pesos...</span>';
-      try {
-        const data = await request('/context/source-weights');
-        renderWeights(data);
-        info.innerHTML = '<div class="success">Matriz de pesos v1.6 carregada.</div>';
-        setStatus('ok', 'Pesos carregados');
-      } catch (err) {
-        info.innerHTML = `<div class="error">Erro ao carregar pesos: ${err.message || err}</div>`;
-        setStatus('err', 'Erro nos pesos');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    if ($('scanBtn')) $('scanBtn').addEventListener('click', async () => {
-      const info = $('contextInfo');
-      const btn = $('scanBtn');
-      btn.disabled = true;
-      info.innerHTML = '<span class="muted">Gerando varredura IA v1.6...</span>';
-      try {
-        const data = await request('/context/scan', { method: 'POST', body: JSON.stringify(scanPayload()) });
-        if ($('finalContextText')) $('finalContextText').value = data.context_master || '';
-        if ($('auxContextText') && data.search_plan_text) {
-          const currentAux = $('auxContextText').value.trim();
-          $('auxContextText').value = currentAux ? currentAux + '\\n\\n' + data.search_plan_text : data.search_plan_text;
-        }
-        renderScanLinks(data);
-        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        info.innerHTML = `<div class="success">Varredura IA v1.8 gerada. Revise os links/fontes antes da decisão.${warningText}</div>`;
-        setStatus('ok', 'Varredura IA pronta');
-      } catch (err) {
-        info.innerHTML = `<div class="error">Erro na varredura IA: ${err.message || err}</div>`;
-        setStatus('err', 'Erro na varredura');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    $('contextBtn').addEventListener('click', async () => {
-      const info = $('contextInfo');
-      const btn = $('contextBtn');
-      btn.disabled = true;
-      info.innerHTML = '<span class="muted">Buscando dados auxiliares...</span>';
-      try {
-        const data = await request('/context/search', { method: 'POST', body: JSON.stringify(contextPayload()) });
-        if ($('auxContextText')) $('auxContextText').value = data.context_text || '';
-        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
-        info.innerHTML = `<div class="success">Dados auxiliares carregados · Fonte: ${data.source || '—'} · Confiança da fonte: ${data.source_confidence || '—'} · Não substitui contexto manual.${warningText}</div>`;
-        setStatus('ok', 'Dados auxiliares carregados');
-      } catch (err) {
-        info.innerHTML = `<div class="error">Erro ao buscar dados auxiliares: ${err.message || err}</div>`;
-        setStatus('err', 'Erro ao buscar contexto');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    function buildMasterContext() {
-      const home = $('homeTeam').value.trim();
-      const away = $('awayTeam').value.trim();
-      const comp = $('competition').value.trim();
-      const mode = $('mode').value;
-      const odds = $('oddsText').value.trim();
-      const manual = $('contextText').value.trim();
-      const news = $('newsText') ? $('newsText').value.trim() : '';
-      const aux = $('auxContextText') ? $('auxContextText').value.trim() : '';
-
-      const parts = [];
-      parts.push(`CONTEXTO MESTRE V26 — ${home} x ${away}${comp ? ' · ' + comp : ''} · ${mode}`);
-      parts.push('REGRA DE PRIORIDADE v1.6: contexto manual/leitura real/odds atuais prevalecem sobre dados auxiliares automáticos. Matriz de pesos: ESPN/GE/notícia local/desfalque/odds/live stats peso 20+, SofaScore 15, FootyStats 14, Academia 10, SportyTrader/WinDrawWin 8, TheSportsDB 5. Se houver divergência, ignorar dado auxiliar fraco e manter a leitura mestre.');
-      if (odds) parts.push(`ODDS/LINHAS INFORMADAS:\n${odds}`);
-      if (manual) {
-        parts.push(`LEITURA MESTRE MANUAL:\n${manual}`);
-      } else {
-        parts.push('LEITURA MESTRE MANUAL: não preenchida. Contexto insuficiente para classificação premium sem revisão humana.');
-      }
-      if (news) parts.push(`NOTÍCIAS, DESFALQUES E MOTIVAÇÃO:\n${news}`);
-      if (aux) {
-        parts.push(`DADOS AUXILIARES AUTOMÁTICOS — USO SECUNDÁRIO:\n${aux}\nObservação: esses dados servem apenas como apoio. Não devem virar narrativa dominante sem confirmação por notícias, estatísticas reais, odds e leitura humana.`);
-      }
-      parts.push(`CHECKLIST V26 PARA FILTRAGEM:
-- Favorito x azarão: confirmar se o mercado precificou nome ou momento real.
-- Necessidade de resultado/motivação: confirmar tabela, mando, fase e urgência.
-- Forma recente: avaliar qualidade dos adversários, não só sequência bruta.
-- Ataque/defesa: verificar produção ofensiva, fragilidade defensiva e ritmo provável.
-- Desfalques/escalação/técnico: dar peso alto a notícias confirmadas.
-- Mercado/odd: comparar linha disponível com a narrativa; não forçar aposta.
-- Risco escondido: se informação for fraca, reduzir classe/stake.
-- Decisão: V26 classifica; IA/dados externos apenas organizam contexto.`);
-
-      $('finalContextText').value = parts.join('\\n\\n');
-      $('contextInfo').innerHTML = '<div class="success">Contexto Mestre consolidado. Revise o texto final antes de rodar a V26 Core.</div>';
-      setStatus('ok', 'Contexto Mestre pronto');
-    }
-
-    if ($('buildMasterBtn')) $('buildMasterBtn').addEventListener('click', buildMasterContext);
-    $('parseBtn').addEventListener('click', async () => {
-      try { const data = await request('/parse', { method: 'POST', body: JSON.stringify({ odds_text: $('oddsText').value }) }); setStatus('ok', 'Parser ok'); renderParse(data); }
-      catch (err) { renderError(err); }
-    });
-
-    function renderIaV26Result(data) {
-      const s = data.strategy || {};
-      const core = data.core || {};
-      const decision = s.decision || {};
-      const marketFirst = s.market_first || {};
-      const contextVs = s.context_vs_price || {};
-      const hyps = (s.advantage_hypotheses || {}).items || [];
-      const iaSelection = s.ia_selection || {};
-      const iaRanking = iaSelection.ranking || [];
-      const corePure = s.core_pure_decision || {};
-      const coreDecision = s.core_decision || {};
-
-      const iaRankingHtml = iaRanking.length ? iaRanking.slice(0,8).map((r, idx) => `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${(r.market || {}).name || ''}</td>
-          <td>${Number((r.market || {}).odds || 0).toFixed(3)}</td>
-          <td>${r.classification || ''}</td>
-          <td>${Number(r.ev_percent || 0).toFixed(1)}%</td>
-          <td>${r.stake_units ? 'R$ ' + r.stake_units + ',00' : 'R$ 0,00'}</td>
-          <td>${(r.ia_alignment || {}).score ?? ''}</td>
-        </tr>
-      `).join('') : '';
-
-      const findingsHtml = (contextVs.what_ia_found || []).slice(0,8).map(x => `<li>${x}</li>`).join('');
-      const hypsHtml = hyps.slice(0,8).map(x => `<li>${x}</li>`).join('');
-      const alignReasons = (((iaSelection.ia_best || {}).ia_alignment || {}).reasons || []).map(x => `<li>${x}</li>`).join('');
-
-      $('resultBox').innerHTML = `
-        <div class="${decision.decision === 'NO_BET' ? 'warn' : 'success'}" style="margin-bottom:12px;">
-          <b>${decision.label || data.decision_label || 'V26'}</b><br>
-          ${s.operational_decision || data.operational_alert || ''}
-        </div>
-
-        <div class="result-hero">
-          <div class="pill">${s.match || ''} · V26</div>
-          <p class="market">${s.headline || ''}</p>
-          <div class="muted">${decision.reason || ''}</div>
-        </div>
-
-        <h2>1. Mercado primeiro</h2>
-        <div class="info-box"><b>${marketFirst.title || 'Mercado primeiro'}</b><br>${marketFirst.reading || ''}<br><br>${marketFirst.doctrine || ''}</div>
-
-        <h2>2. Contexto contra a odd</h2>
-        <div class="info-box">${contextVs.reading || ''}</div>
-        ${findingsHtml ? `<ul>${findingsHtml}</ul>` : ''}
-
-        <h2>3. Por que a IA escolheu/rejeitou</h2>
-        <div class="info-box"><ul>${alignReasons || '<li>Sem justificativa de alinhamento.</li>'}</ul></div>
-
-        <h2>4. Hipóteses de vantagem</h2>
-        <div class="info-box"><ul>${hypsHtml || '<li>Sem hipóteses geradas.</li>'}</ul></div>
-
-        <h2>5. Ranking V26</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Mercado</th><th>Odd</th><th>Classe Core</th><th>EV Core</th><th>Stake Core</th><th>Score IA</th>
-            </tr>
-          </thead>
-          <tbody>${iaRankingHtml}</tbody>
-        </table>
-
-        <h2>6. Comparação com Core técnico</h2>
-        <div class="info-box">
-          <b>Core técnico:</b> ${corePure.market || ''} · Classe ${corePure.classification || ''} · EV ${Number(corePure.ev || 0).toFixed(1)}% · ${corePure.stake || ''}<br>
-          <b>V26:</b> ${decision.market || ''} · Classe ${decision.classification || ''} · EV ${Number(decision.ev || 0).toFixed(1)}% · ${decision.stake || ''}
-          <br><br>
-          O V26 usa IA + Core em conjunto. A comparação técnica abaixo é apenas auditoria interna.
-        </div>
-
-        <h2>Alertas do Core</h2>
-        <div class="info-box"><ul>${(coreDecision.alerts || []).map(a => `<li>${a}</li>`).join('')}</ul></div>
-      `;
-
-      setStatus(data.decision === 'NO_BET' ? 'warn' : 'ok', 'V26 pronto');
-    }
-
-    if ($('iaV26Btn')) $('iaV26Btn').addEventListener('click', async () => {
-      const btn = $('iaV26Btn');
-      btn.disabled = true;
-      setStatus('warn', 'Rodando V26');
-      $('resultBox').innerHTML = '<span class="muted">Limpando odds Pinnacle, aplicando IA V26 e classificando...</span>';
-      try {
-        $('oddsText').value = await backendCleanOddsText($('oddsText').value);
-        const data = await request('/analyze/ia-v26', { method: 'POST', body: JSON.stringify(payload()) });
-        renderIaV26Result(data);
-        if (data.context_ia && $('finalContextText')) {
-          $('finalContextText').value = data.context_ia.context_master || $('finalContextText').value;
-        }
-      } catch (err) {
-        renderError(err);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-
-    $('analyzeBtn').addEventListener('click', async () => {
-      try {
-        $('resultBox').innerHTML = '<span class="muted">Rodando V26 Core...</span>';
-        const data = await request('/analyze', { method: 'POST', body: JSON.stringify(payload()) });
-        setStatus('ok', 'Análise ok');
-        renderResult(data);
-      } catch (err) { renderError(err); }
-    });
-    $('runBench').addEventListener('click', async () => {
-      const box = $('benchmarksBox');
-      box.innerHTML = '<p class="muted small">Rodando benchmarks...</p>';
-      try {
-        const data = await request('/benchmarks/run');
-        const cls = data.passed ? 'success' : 'error';
-        box.innerHTML = `<div class="${cls}" style="margin-top:12px;">${data.passed_count}/${data.total} benchmarks passaram.</div><div class="bench-list">${data.cases.map(c=>`<div class="bench-item"><div><b>${c.id}</b><div class="muted small">${c.name}<br>${c.actual_best_market} · ${c.actual_class}</div></div><div>${c.passed ? '✅' : '❌'}</div></div>`).join('')}</div>`;
-        setStatus(data.passed ? 'ok' : 'err', data.passed ? 'Benchmarks ok' : 'Benchmark falhou');
-      } catch (err) { box.innerHTML = `<div class="error" style="margin-top:12px;">${err.message}</div>`; setStatus('err', 'Erro'); }
-    });
-    $('clearBtn').addEventListener('click', () => {
-      ['homeTeam','awayTeam','competition','oddsText','contextText','newsText','auxContextText','sourceBlocksText','finalContextText'].forEach(id => { if ($(id)) $(id).value = ''; });
-      $('mode').value = 'pre_live';
-      $('contextInfo').innerHTML = '<span class="muted">Dados automáticos são auxiliares. Contexto manual/leitura real prevalece.</span>';
-      if ($('scanBox')) $('scanBox').innerHTML = '';
-      $('resultBox').innerHTML = '<span class="muted">Nenhuma análise rodada ainda.</span>';
-    });
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
-  </script>
+    $('ocrText').value = frontendCleanOddsText(parts.join('\n'));
+    $('ocrInfo').textContent = 'OCR concluído. Revise antes de usar.';
+  } finally {
+    $('ocrBtn').disabled = false;
+  }
+}
+$('ocrBtn').addEventListener('click', runOcr);
+$('useOcrBtn').addEventListener('click', () => {
+  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), $('ocrText').value.trim()].filter(Boolean).join('\n'));
+});
+
+request('/health').then(h => setStatus('ok', h.version || 'V26 pronto')).catch(() => setStatus('bad', 'Backend offline'));
+</script>
 </body>
 </html>
