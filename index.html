@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.5</title>
+  <title>V26 Web v3.9.6</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -54,6 +54,13 @@
     summary { font-weight:900; cursor:pointer; }
     .success { color:#bbf7d0; } .error { color:#fecaca; } .warning { color:#fde68a; }
     .small { font-size:13px; }
+    .agendaGrid { display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px; }
+    .gameCard { border:1px solid var(--line); border-radius:14px; padding:11px 12px; background:#0b1220; }
+    .gameTime { color:#bbf7d0; font-weight:900; font-size:13px; margin-bottom:4px; }
+    .gameTeams { font-weight:900; color:#e5e7eb; }
+    .gameMeta { color:var(--muted); font-size:13px; margin-top:4px; }
+    .agendaHead { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+    .badge { font-size:12px; padding:4px 8px; border-radius:999px; background:#1e293b; color:#cbd5e1; border:1px solid var(--line); }
     .hidden { display:none !important; }
   </style>
 </head>
@@ -62,21 +69,34 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.5</h1>
-      <div class="sub">Dashboard limpo: Vision 1 por vez → Core V26 completo</div>
+      <h1>V26 Web v3.9.6</h1>
+      <div class="sub">Dashboard limpo: agenda do dia → Vision → Core V26</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
 </header>
 
 <main>
+
+  <section id="agendaSection">
+    <div class="agendaHead">
+      <div>
+        <h2>Jogos do dia</h2>
+        <div class="hint">Apenas agenda/lembrete. Não define aposta e não direciona para outro lugar.</div>
+      </div>
+      <div id="agendaDateBadge" class="badge">Hoje</div>
+    </div>
+    <div id="agendaBox" class="agendaGrid">
+      <div class="hint">Carregando jogos de hoje...</div>
+    </div>
+  </section>
+
   <section>
     <h2>1. Mensagem inicial para IA V26</h2>
     <div class="hint">Escreva como se estivesse falando aqui. A IA prepara times, campeonato e contexto em português. O favorito será detectado pelas odds/contexto; o Time 1 não é assumido automaticamente como favorito.</div>
     <textarea id="initialMessage" class="big" placeholder="Ex: Vamos rodar V26 no jogo Alemanha x Paraguai pela Copa do Mundo FIFA. Alemanha muito favorita, ML/classificar espremidos, Paraguai reativo/recuado, procurar mercado de valor no HT."></textarea>
     <div class="actions">
       <button id="parseMsgBtn" class="secondary">Preparar jogo pela mensagem</button>
-      <button id="agendaBtn" class="secondary">Agenda do dia</button>
     </div>
     <div id="messageInfo" class="chips"></div>
 
@@ -178,10 +198,6 @@
     <div id="resultBox" class="hint">Prepare o jogo, extraia/revise odds Pinnacle e toque em Rodar V26 completo.</div>
   </section>
 
-  <details class="panel">
-    <summary>Agenda do dia — lembrete</summary>
-    <div id="agendaBox" class="hint">A agenda não decide nada; só ajuda a lembrar jogos do dia.</div>
-  </details>
 </main>
 
 <script>
@@ -475,26 +491,67 @@ $('runBtn').addEventListener('click', async () => {
   } finally { $('runBtn').disabled = false; }
 });
 
-$('agendaBtn').addEventListener('click', async () => {
-  $('agendaBox').innerHTML = 'Carregando agenda...';
-  try {
-    const data = await request('/agenda');
-    const games = data.matches || data.games || data.items || [];
-    if (!games.length) {
-      $('agendaBox').innerHTML = 'Nenhum jogo retornado pela agenda. Use a mensagem inicial normalmente.';
-      return;
-    }
-    $('agendaBox').innerHTML = games.slice(0,20).map(g => {
-      const home = g.home_team || g.home || g.homeTeam || '';
-      const away = g.away_team || g.away || g.awayTeam || '';
-      const comp = g.competition || g.league || '';
-      return `<div class="chip" onclick="document.getElementById('initialMessage').value='Rodar V26 completo em ${home} x ${away} pela ${comp}';">${home} x ${away} · ${comp}</div>`;
-    }).join('');
-  } catch (err) {
-    $('agendaBox').innerHTML = 'Agenda indisponível. Use a mensagem inicial.';
-  }
-});
+function todayLocalISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
 
+function formatGameDateTime(raw) {
+  if (!raw) return 'Horário não informado';
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleString('pt-BR', {
+    weekday:'short',
+    day:'2-digit',
+    month:'2-digit',
+    hour:'2-digit',
+    minute:'2-digit'
+  });
+}
+
+function gameCompetition(g) {
+  return g.competition_name || g.competition || g.league || g.competition_code || '';
+}
+
+function renderAgendaGames(games, data) {
+  const date = data.date || todayLocalISO();
+  $('agendaDateBadge').textContent = `Hoje · ${date}`;
+  if (!games.length) {
+    $('agendaBox').innerHTML = '<div class="hint">Nenhum jogo encontrado na agenda de hoje. A cobertura depende do token/campeonatos disponíveis.</div>';
+    return;
+  }
+  $('agendaBox').innerHTML = games.slice(0,30).map(g => {
+    const home = g.home_team || g.home || g.homeTeam || '';
+    const away = g.away_team || g.away || g.awayTeam || '';
+    const comp = gameCompetition(g);
+    const when = formatGameDateTime(g.utc_date || g.utcDate || g.date || g.kickoff || '');
+    const status = g.status ? ` · ${g.status}` : '';
+    const source = g.source ? ` · ${g.source}` : '';
+    return `<div class="gameCard">
+      <div class="gameTime">${when}${status}</div>
+      <div class="gameTeams">${home || 'Time 1'} x ${away || 'Time 2'}</div>
+      <div class="gameMeta">${comp || 'Competição não informada'}${source}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadAgendaToday() {
+  const date = todayLocalISO();
+  $('agendaDateBadge').textContent = `Hoje · ${date}`;
+  $('agendaBox').innerHTML = '<div class="hint">Carregando jogos de hoje...</div>';
+  try {
+    const data = await request(`/agenda?date=${encodeURIComponent(date)}&limit=30`);
+    const games = data.matches || data.games || data.items || [];
+    renderAgendaGames(games, data);
+  } catch (err) {
+    $('agendaBox').innerHTML = '<div class="hint">Agenda indisponível agora. O V26 continua funcionando normalmente com mensagem manual.</div>';
+  }
+}
+
+loadAgendaToday();
 request('/health').then(h => setStatus('ok', h.version || 'V26 pronto')).catch(()=>setStatus('bad','Backend offline'));
 </script>
 </body>
