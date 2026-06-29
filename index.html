@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v2.4</title>
+  <title>V26 Web v2.6</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -249,7 +249,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v2.4</h1>
+          <h1>V26 Web v2.6</h1>
           <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
         </div>
       </div>
@@ -411,7 +411,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v2.4: IA mostra se pesquisou de verdade; Core bloqueia linhas alternativas extremas e odds automáticas não-Pinnacle. Se tudo for C/D, decisão é NÃO APOSTAR. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v2.6: odds são mercado/dinheiro; contexto serve para achar vantagem contra a probabilidade implícita; EV nasce dessa diferença. IA levanta hipóteses, V26 Core decide classe/stake. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -427,7 +427,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v2.4 — Contexto IA + Core blindado. V26 decide.</div>
+    <div class="footer-note">V26 Web v2.6 — IA com Doutrina V26. V26 decide.</div>
   </main>
 
   <script>
@@ -942,7 +942,14 @@
 
     function renderV26Think(data) {
       const box = $('scanBox');
-      const sections = data.sections || {};
+      const narrative = data.narrative_synthesis || {};
+      const findings = narrative.what_ia_found || [];
+      const hypotheses = narrative.market_hypotheses || [];
+      const marketRead = narrative.market_read || {};
+      const caveats = narrative.caveats || [];
+      const marketFirst = narrative.market_first_reading || {};
+      const doctrine = data.v26_doctrine || narrative.v26_doctrine_applied || {};
+      const marketDoctrine = data.market_doctrine || narrative.market_doctrine || {};
       const gates = data.gates || [];
       const missing = data.missing_questions || [];
       const sources = data.source_panel || {};
@@ -952,6 +959,32 @@
       const searchAudit = realSearch
         ? `Busca real: SIM · brutos: ${scanMeta.raw_results_count ?? 0} · relevantes: ${scanMeta.relevant_results_count ?? 0} · finais: ${scanMeta.deduped_results_count ?? 0}`
         : 'Busca real: NÃO · falta TAVILY_API_KEY ou a busca não executou.';
+
+      const findingRows = findings.length ? findings.map(f => `
+        <div class="scan-link">
+          <b>${f.tema} · ${f.alvo}</b>
+          <span>${f.leitura || ''}</span>
+          ${(f.evidencias || []).slice(0,2).map(ev => `<span>• ${ev}</span>`).join('')}
+          ${(f.fontes || []).slice(0,2).map(src => `<span>Fonte: ${src.fonte || ''} — ${src.trecho || ''}</span>`).join('')}
+        </div>
+      `).join('') : '<div class="info-box">A IA não encontrou achados fortes; revise fontes ou contexto manual.</div>';
+
+      const hypothesisRows = hypotheses.length ? hypotheses.map(h => `
+        <div class="scan-link">
+          <b>${h.mercado || 'Hipótese'}</b>
+          <span>${h.por_que || ''}</span>
+          <span>Condição: ${h.condicao || ''}</span>
+          <span>Status: ${h.status || ''}</span>
+        </div>
+      `).join('') : '<div class="info-box">Nenhuma hipótese de mercado gerada.</div>';
+
+      const usableMarkets = (marketRead.usable_markets_reference || []).slice(0,10).map(m => `
+        <div class="scan-link"><b>Referência</b><span>${m.raw || ''}</span></div>
+      `).join('');
+      const blockedMarkets = (marketRead.blocked_extreme_markets || []).slice(0,10).map(m => `
+        <div class="scan-link"><b>Bloqueado/extremo</b><span>${m.raw || ''}</span></div>
+      `).join('');
+
       const gateRows = gates.map(g => `
         <div class="scan-link">
           <b>${g.passed ? 'OK' : 'TRAVA'} · ${g.name}</b>
@@ -959,28 +992,55 @@
           <span>Ação: ${g.action}</span>
         </div>
       `).join('');
+
       const missingRows = missing.map(q => `<li>${q}</li>`).join('');
       const sourceRows = Object.entries(sources.domains || {}).map(([d, n]) => `<span class="pill">${d}: ${n}</span>`).join('');
+      const caveatRows = caveats.map(c => `<li>${c}</li>`).join('');
 
       box.innerHTML = `
         <div class="info-box">
-          <b>Contexto IA V26 gerado</b><br>
-          ${searchAudit}<br>
+          <b>Doutrina V26 aplicada</b><br>
+          Odds = mercado/dinheiro. Contexto = busca de vantagem contra o preço. EV = probabilidade real acima da probabilidade implícita.<br><br>
+          <b>Mercado primeiro</b><br>
+          ${marketFirst.headline || marketDoctrine.reading || 'Sem leitura de mercado inicial.'}<br>
+          ${marketFirst.reading || ''}<br>
+          Ação: ${marketFirst.action || ''}<br><br>
+          <b>Leitura IA do jogo</b><br>
+          ${searchAudit}<br><br>
+          <b>${narrative.headline || 'Sem resumo narrativo.'}</b><br>
+          ${narrative.reading || ''}<br><br>
           Teto contextual: <b>${data.context_cap || 'N/D'}</b><br>
           Próxima ação: ${data.recommended_next_action || ''}
         </div>
+
+        <h3>O que a IA encontrou</h3>
+        ${findingRows}
+
+        <h3>Leitura de mercado</h3>
+        <div class="info-box">${marketRead.leitura || 'Sem leitura de mercado.'}</div>
+        ${usableMarkets}
+        ${blockedMarkets}
+
+        <h3>Hipóteses para o V26 Core</h3>
+        ${hypothesisRows}
+
         <h3>Travas V26</h3>
         ${gateRows || '<div class="info-box">Sem travas retornadas.</div>'}
+
         <h3>Perguntas pendentes</h3>
         <div class="info-box"><ul>${missingRows}</ul></div>
+
         <h3>Fontes</h3>
         <div class="info-box">${sourceRows || 'Sem domínios fortes retornados.'}<br>${sources.leitura_v26 || ''}</div>
+
+        <h3>Alertas</h3>
+        <div class="info-box"><ul>${caveatRows}</ul></div>
       `;
 
       if ($('finalContextText')) {
         $('finalContextText').value = data.context_master || '';
       }
-      $('contextInfo').innerHTML = `<div class="success">Contexto IA V26 pronto. Revise as travas antes de Rodar V26 Core.</div>`;
+      $('contextInfo').innerHTML = `<div class="success">Contexto IA narrativo pronto. Revise hipóteses e rode V26 Core só com mercado limpo.</div>`;
     }
 
     if ($('v26ThinkBtn')) $('v26ThinkBtn').addEventListener('click', async () => {
