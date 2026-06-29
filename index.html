@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v4.0.0</title>
+  <title>V26 Web v4.0.1</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -68,6 +68,13 @@
     pre.jsonBox { white-space:pre-wrap; word-break:break-word; background:#06101d; border:1px solid var(--line); border-radius:14px; padding:12px; color:#dbeafe; max-height:360px; overflow:auto; }
     .auditItem { border:1px solid var(--line); border-radius:14px; padding:12px; background:#0b1220; margin:8px 0; }
     .auditTop { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .auditControls { margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .auditControls label { margin:4px 0; font-size:13px; }
+    .auditControls input,.auditControls select,.auditControls textarea { padding:10px; font-size:14px; border-radius:12px; }
+    .auditControls textarea { min-height:70px; }
+    .quickBtns { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .quickBtns button { padding:10px 12px; font-size:14px; }
+    @media (max-width:740px) { .auditControls{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -75,8 +82,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v4.0.0</h1>
-      <div class="sub">Banco de auditoria + importar análise do Chat → V26</div>
+      <h1>V26 Web v4.0.1</h1>
+      <div class="sub">Banco de auditoria + filtros + fechar aposta → V26</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -234,7 +241,49 @@
     </details>
 
     <details class="panel" style="margin-top:14px;" open>
-      <summary>Resumo e últimos registros</summary>
+      <summary>Resumo, filtros e últimos registros</summary>
+
+      <div class="grid3" style="margin-top:12px;">
+        <div>
+          <label>Classe</label>
+          <select id="filterClass">
+            <option value="">Todas</option>
+            <option value="A+">A+</option>
+            <option value="A">A</option>
+            <option value="B+">B+</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+        <div>
+          <label>Resultado</label>
+          <select id="filterResult">
+            <option value="">Todos</option>
+            <option value="pending">Pendente</option>
+            <option value="green">Green</option>
+            <option value="red">Red</option>
+            <option value="void">Void</option>
+            <option value="no_bet">Sem aposta</option>
+          </select>
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="filterState">
+            <option value="">Todos</option>
+            <option value="ENTRADA_CONDICIONAL">Entrada condicional</option>
+            <option value="ENTRADA_VALIDADA">Entrada validada</option>
+            <option value="PRE_CANDIDATO">Pré-candidato</option>
+            <option value="NAO_APOSTAR">Não apostar</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="applyFiltersBtn" class="secondary">Aplicar filtros</button>
+        <button id="clearFiltersBtn" class="secondary">Limpar filtros</button>
+      </div>
+
       <div id="auditSummary" class="hint">Toque em “Atualizar Banco/ROI”.</div>
       <div id="auditList"></div>
     </details>
@@ -697,6 +746,169 @@ async function saveAuditRecord(record, importFromChat=false) {
   return data.entry || data;
 }
 
+function auditFilterQuery() {
+  const qs = new URLSearchParams();
+  qs.set('limit','30');
+  const cls = $('filterClass') ? $('filterClass').value : '';
+  const res = $('filterResult') ? $('filterResult').value : '';
+  const st = $('filterState') ? $('filterState').value : '';
+  if (cls) qs.set('class_v26', cls);
+  if (res) qs.set('result_status', res);
+  if (st) qs.set('decision_state', st);
+  return qs.toString();
+}
+
+function auditSelectValue(v, fallback='pending') {
+  return String(v || fallback).replace(/"/g,'&quot;');
+}
+
+async function updateAuditEntry(id, values) {
+  const data = await request(`/audit/entries/${id}/result`, {method:'POST', body:JSON.stringify(values)});
+  return data.entry || data;
+}
+
+function quickPL(entry, status) {
+  const stake = Number(entry.stake_reais || entry.actual_stake_reais || 0);
+  const odd = Number(entry.entry_odd || entry.odd_analyzed || 0);
+  if (status === 'green') return Number((stake * Math.max(0, odd - 1)).toFixed(2));
+  if (status === 'red') return Number((-stake).toFixed(2));
+  return 0;
+}
+
+async function closeQuick(id, status) {
+  const entry = (window.auditEntriesCache || []).find(e => Number(e.id) === Number(id));
+  if (!entry) return;
+  const pl = quickPL(entry, status);
+  try {
+    await updateAuditEntry(id, {
+      entry_made: true,
+      result_status: status,
+      profit_loss_reais: pl,
+      analysis_correct: null,
+      execution_correct: true,
+      variance: null,
+      verdict: status,
+      notes: `Fechada via botão rápido: ${status}.`
+    });
+    $('auditInfo').innerHTML = `<span class="success">Aposta #${id} marcada como ${status.toUpperCase()} · P/L R$ ${pl.toFixed(2)}</span>`;
+    await refreshAudit();
+  } catch (err) {
+    $('auditInfo').innerHTML = `<span class="error">Erro ao fechar #${id}: ${err.message}</span>`;
+  }
+}
+
+async function saveAuditEdit(id) {
+  const get = suffix => document.getElementById(`audit_${id}_${suffix}`);
+  const result = get('result').value;
+  const pl = Number((get('pl').value || '0').replace(',', '.'));
+  const analysis = get('analysis').value;
+  const execution = get('execution').value;
+  const variance = get('variance').value;
+  const verdict = get('verdict').value;
+  const notes = get('notes').value;
+  const toBool = v => v === '' ? null : v === 'true';
+
+  try {
+    await updateAuditEntry(id, {
+      entry_made: result !== 'no_bet',
+      result_status: result,
+      profit_loss_reais: pl,
+      analysis_correct: toBool(analysis),
+      execution_correct: toBool(execution),
+      variance: toBool(variance),
+      verdict,
+      notes
+    });
+    $('auditInfo').innerHTML = `<span class="success">Auditoria #${id} atualizada.</span>`;
+    await refreshAudit();
+  } catch (err) {
+    $('auditInfo').innerHTML = `<span class="error">Erro ao salvar auditoria #${id}: ${err.message}</span>`;
+  }
+}
+
+function renderAuditEntry(e) {
+  const id = e.id;
+  return `
+    <div class="auditItem">
+      <div class="auditTop">
+        <b>#${id} · ${e.match || 'Jogo'}</b>
+        <span class="badge">${e.decision_state || 'N/D'} · ${e.class_v26 || 'N/D'} · ${e.result_status || 'pending'}</span>
+      </div>
+      <div class="small" style="margin-top:6px;">
+        ${e.market || 'Mercado não informado'} @${e.odd_analyzed || 'N/D'} · EV ${Number(e.ev_percent||0).toFixed(1)}% · Stake R$ ${Number(e.stake_reais||0).toFixed(2)}
+      </div>
+      <div class="small" style="color:var(--muted);margin-top:4px;">
+        Resultado: ${e.result_status || 'pending'} · P/L R$ ${Number(e.profit_loss_reais||0).toFixed(2)}
+      </div>
+
+      <div class="quickBtns">
+        <button class="good" onclick="closeQuick(${id}, 'green')">GREEN</button>
+        <button class="warn" onclick="closeQuick(${id}, 'void')">VOID</button>
+        <button class="secondary" onclick="closeQuick(${id}, 'red')">RED</button>
+      </div>
+
+      <details style="margin-top:10px;">
+        <summary>Auditar / editar resultado</summary>
+        <div class="auditControls">
+          <div>
+            <label>Resultado</label>
+            <select id="audit_${id}_result">
+              <option value="pending" ${e.result_status==='pending'?'selected':''}>pending</option>
+              <option value="green" ${e.result_status==='green'?'selected':''}>green</option>
+              <option value="red" ${e.result_status==='red'?'selected':''}>red</option>
+              <option value="void" ${e.result_status==='void'?'selected':''}>void</option>
+              <option value="no_bet" ${e.result_status==='no_bet'?'selected':''}>no_bet</option>
+            </select>
+          </div>
+          <div>
+            <label>Lucro/Prejuízo R$</label>
+            <input id="audit_${id}_pl" value="${Number(e.profit_loss_reais||0).toFixed(2)}" />
+          </div>
+          <div>
+            <label>Análise correta?</label>
+            <select id="audit_${id}_analysis">
+              <option value="" ${e.analysis_correct===null?'selected':''}>indefinido</option>
+              <option value="true" ${e.analysis_correct===1?'selected':''}>sim</option>
+              <option value="false" ${e.analysis_correct===0?'selected':''}>não</option>
+            </select>
+          </div>
+          <div>
+            <label>Execução correta?</label>
+            <select id="audit_${id}_execution">
+              <option value="" ${e.execution_correct===null?'selected':''}>indefinido</option>
+              <option value="true" ${e.execution_correct===1?'selected':''}>sim</option>
+              <option value="false" ${e.execution_correct===0?'selected':''}>não</option>
+            </select>
+          </div>
+          <div>
+            <label>Foi variância?</label>
+            <select id="audit_${id}_variance">
+              <option value="" ${e.variance===null?'selected':''}>indefinido</option>
+              <option value="true" ${e.variance===1?'selected':''}>sim</option>
+              <option value="false" ${e.variance===0?'selected':''}>não</option>
+            </select>
+          </div>
+          <div>
+            <label>Veredito</label>
+            <select id="audit_${id}_verdict">
+              <option value="" ${!e.verdict?'selected':''}>indefinido</option>
+              <option value="analise_correta" ${e.verdict==='analise_correta'?'selected':''}>análise correta</option>
+              <option value="erro_analise" ${e.verdict==='erro_analise'?'selected':''}>erro de análise</option>
+              <option value="erro_execucao" ${e.verdict==='erro_execucao'?'selected':''}>erro de execução</option>
+              <option value="variancia" ${e.verdict==='variancia'?'selected':''}>variância</option>
+            </select>
+          </div>
+        </div>
+        <label>Observações da auditoria</label>
+        <textarea id="audit_${id}_notes">${(e.notes || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+        <div class="actions">
+          <button class="good" onclick="saveAuditEdit(${id})">Salvar auditoria</button>
+        </div>
+      </details>
+    </div>
+  `;
+}
+
 async function refreshAudit() {
   try {
     const summary = await request('/audit/summary');
@@ -714,26 +926,22 @@ async function refreshAudit() {
       ${(summary.by_class || []).map(r => `<tr><td>${r.class_v26}</td><td>${r.total}</td><td>R$ ${Number(r.profit_loss_reais||0).toFixed(2)}</td><td>R$ ${Number(r.stake_sum_reais||0).toFixed(2)}</td><td>${Number(r.roi_percent||0).toFixed(2)}%</td></tr>`).join('')}
       </tbody></table>
     `;
-    const list = await request('/audit/entries?limit=15');
+    const list = await request('/audit/entries?' + auditFilterQuery());
     const entries = list.entries || [];
-    $('auditList').innerHTML = entries.length ? entries.map(e => `
-      <div class="auditItem">
-        <div class="auditTop">
-          <b>#${e.id} · ${e.match || 'Jogo'}</b>
-          <span class="badge">${e.decision_state || 'N/D'} · ${e.class_v26 || 'N/D'}</span>
-        </div>
-        <div class="small" style="margin-top:6px;">
-          ${e.market || 'Mercado não informado'} @${e.odd_analyzed || 'N/D'} · EV ${Number(e.ev_percent||0).toFixed(1)}% · Stake R$ ${Number(e.stake_reais||0).toFixed(2)}
-        </div>
-        <div class="small" style="color:var(--muted);margin-top:4px;">
-          Resultado: ${e.result_status || 'pending'} · P/L R$ ${Number(e.profit_loss_reais||0).toFixed(2)}
-        </div>
-      </div>
-    `).join('') : '<div class="hint">Nenhum registro salvo ainda.</div>';
+    window.auditEntriesCache = entries;
+    $('auditList').innerHTML = entries.length ? entries.map(renderAuditEntry).join('') : '<div class="hint">Nenhum registro encontrado com estes filtros.</div>';
   } catch (err) {
     $('auditSummary').innerHTML = `<span class="error">Erro ao carregar banco: ${err.message}</span>`;
   }
 }
+
+$('applyFiltersBtn').addEventListener('click', refreshAudit);
+$('clearFiltersBtn').addEventListener('click', async () => {
+  $('filterClass').value = '';
+  $('filterResult').value = '';
+  $('filterState').value = '';
+  await refreshAudit();
+});
 
 $('saveLastBtn').addEventListener('click', async () => {
   if (!lastV26Data) return alert('Rode uma análise primeiro.');
