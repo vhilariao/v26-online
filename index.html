@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.2.1</title>
+  <title>V26 Web v3.9.3.1</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -62,8 +62,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.2.1</h1>
-      <div class="sub">Dashboard limpo: EV conservador → GPT Contexto → Core V26 completo</div>
+      <h1>V26 Web v3.9.3.1</h1>
+      <div class="sub">Dashboard limpo: times dinâmicos → equivalência HT → Core V26 completo</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -436,12 +436,28 @@ function renderResult(data) {
   `;
   setStatus(isBet ? 'ok' : 'bad', isBet ? 'Entrada V26' : 'Não apostar');
 }
+function rowTable(rows, title) {
+  if (!rows || !rows.length) return '';
+  return `<h3>${title}</h3><table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risco</th><th>Stake</th></tr></thead><tbody>
+  ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${(r.market||{}).name||''}</td><td>${val((r.market||{}).odds)}</td><td>${val(r.classification)}</td><td>${r.stake_units ? pct(r.ev_percent) : 'não operacional'}</td><td>${val(r.ic)}</td><td>${pct(r.confidence)}</td><td>${pct(r.risk)}</td><td>${r.stake_units ? 'R$ '+r.stake_units+',00' : 'R$ 0,00'}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
 function renderMarkets(s) {
+  const groups = s.ranking_groups || {};
+  if (groups.official_entry) {
+    const html = [
+      rowTable([groups.official_entry], 'Entrada oficial V26'),
+      rowTable(groups.equivalent_valid || [], 'Equivalentes válidos'),
+      rowTable(groups.secondary_candidates || [], 'Candidatos secundários'),
+      rowTable(groups.rejected || [], 'Rejeitados / sem entrada'),
+      rowTable(groups.unsupported || [], 'Fora do Core')
+    ].filter(Boolean).join('');
+    return html || '<div class="hint">Sem ranking retornado.</div>';
+  }
   const rows = (((s.ia_selection_internal || {}).ranking) || []).slice(0,10);
   if (!rows.length) return '<div class="hint">Sem ranking retornado.</div>';
-  return `<table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risco</th><th>Stake</th></tr></thead><tbody>
-  ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${(r.market||{}).name||''}</td><td>${val((r.market||{}).odds)}</td><td>${val(r.classification)}</td><td>${pct(r.ev_percent)}</td><td>${val(r.ic)}</td><td>${pct(r.confidence)}</td><td>${pct(r.risk)}</td><td>${r.stake_units ? 'R$ '+r.stake_units+',00' : 'R$ 0,00'}</td></tr>`).join('')}
-  </tbody></table>`;
+  return rowTable(rows, 'Ranking bruto');
 }
 $('runBtn').addEventListener('click', async () => {
   $('runBtn').disabled = true;
