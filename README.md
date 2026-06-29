@@ -1,9 +1,5 @@
-# V26 Web v2.1 — Odds avançadas
+# V26 Web v3.3 — OCR recupera HT
 
 Mudanças:
-- Botão Buscar odds básicas.
-- Botão Buscar odds avançadas.
-- Campo de mercados avançados por evento.
-- Tenta BTTS, DNB, handicaps alternativos e totals alternativos.
-- Exibe resumo dos mercados encontrados.
-- HT permanece manual se não aparecer na API.
+- Corrige OCR que perde "1º Tempo" no mercado Total da Equipe Over 0.5.
+- Mantém missão de ouro v3.2.
