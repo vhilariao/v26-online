@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.8.2</title>
+  <title>V26 Web v1.9</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -163,6 +163,24 @@
     .scan-link span { display: block; color: var(--muted); margin-top: 3px; }
 
 
+
+    .agenda-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .match-card {
+      display: grid;
+      gap: 6px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(9,15,29,.62);
+    }
+    .match-card b { color: #e2e8f0; }
+    .match-card span { color: var(--muted); font-size: 12px; }
+    .match-card button { width: fit-content; padding: 9px 12px; border-radius: 10px; }
+
     details.advanced {
       margin-top: 12px;
       border: 1px solid var(--border);
@@ -210,8 +228,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.8.2</h1>
-          <div class="subtitle">Busca focada + Varredura IA + V26 Core</div>
+          <h1>V26 Web v1.9</h1>
+          <div class="subtitle">Agenda de Jogos + Contexto IA + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -308,7 +326,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v1.8.2: busca focada remove aleatoriedade/duplicidade; a interface mostra só o essencial. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v1.9: jogo selecionado pela agenda padroniza times/competição. IA busca contexto; V26 decide. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -324,7 +342,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v1.8.2 — Busca focada. API filtra duplicados e V26 decide.</div>
+    <div class="footer-note">V26 Web v1.9 — Agenda de jogos. Selecione o jogo antes da IA/V26.</div>
   </main>
 
   <script>
@@ -515,6 +533,87 @@
 
 
 
+
+
+    function todayIso() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    if ($('agendaDate') && !$('agendaDate').value) $('agendaDate').value = todayIso();
+
+    function fmtUtc(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      } catch (_) {
+        return iso;
+      }
+    }
+
+    function selectAgendaMatch(m) {
+      $('homeTeam').value = m.home_team || '';
+      $('awayTeam').value = m.away_team || '';
+      $('competition').value = m.competition_name || m.competition_code || '';
+      const line = `Jogo selecionado pela agenda football-data.org: ${m.home_team} x ${m.away_team} · ${m.competition_name || ''} · ${fmtUtc(m.utc_date)} · fixture_id ${m.fixture_id}.`;
+      const current = $('contextText').value.trim();
+      $('contextText').value = current ? `${current}\n\n${line}` : line;
+      $('agendaInfo').innerHTML = `<div class="success">Jogo selecionado: ${m.home_team} x ${m.away_team}. Agora gere o Contexto IA ou rode a V26.</div>`;
+      setStatus('ok', 'Jogo selecionado');
+      document.getElementById('homeTeam').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function renderAgenda(data) {
+      const matches = data.matches || [];
+      if (!matches.length) {
+        $('agendaBox').innerHTML = '<div class="info-box">Nenhum jogo retornado. Verifique data, competição, token ou cobertura do plano.</div>';
+        return;
+      }
+      $('agendaBox').innerHTML = matches.map((m, idx) => `
+        <div class="match-card">
+          <b>${m.home_team} x ${m.away_team}</b>
+          <span>${m.competition_name || 'Competição'} · ${fmtUtc(m.utc_date)} · ${m.status || ''}</span>
+          <span>${m.area_name || ''}${m.matchday ? ' · rodada ' + m.matchday : ''}</span>
+          <button class="primary" data-match-idx="${idx}">Analisar este jogo</button>
+        </div>
+      `).join('');
+
+      [...document.querySelectorAll('[data-match-idx]')].forEach(btn => {
+        btn.addEventListener('click', () => selectAgendaMatch(matches[Number(btn.dataset.matchIdx)]));
+      });
+    }
+
+    if ($('agendaBtn')) $('agendaBtn').addEventListener('click', async () => {
+      const info = $('agendaInfo');
+      const btn = $('agendaBtn');
+      btn.disabled = true;
+      info.innerHTML = '<span class="muted">Carregando agenda...</span>';
+      try {
+        const date = encodeURIComponent($('agendaDate').value || todayIso());
+        const comp = encodeURIComponent($('agendaCompetition').value.trim());
+        const data = await request(`/agenda?date=${date}&competition=${comp}&limit=100`);
+        renderAgenda(data);
+        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
+        if (data.status === 'setup_required') {
+          info.innerHTML = `<div class="warn">Agenda instalada, mas falta FOOTBALL_DATA_TOKEN no Render.${warningText}</div>`;
+          setStatus('warn', 'Agenda pendente');
+        } else if (data.status === 'ok') {
+          info.innerHTML = `<div class="success">Agenda carregada: ${(data.matches || []).length} jogos encontrados.${warningText}</div>`;
+          setStatus('ok', 'Agenda ok');
+        } else {
+          info.innerHTML = `<div class="error">Erro na agenda.${warningText}</div>`;
+          setStatus('err', 'Erro agenda');
+        }
+      } catch (err) {
+        info.innerHTML = `<div class="error">Erro ao carregar agenda: ${err.message || err}</div>`;
+        setStatus('err', 'Erro agenda');
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     function webScanPayload() {
       return {

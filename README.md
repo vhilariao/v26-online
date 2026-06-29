@@ -1,7 +1,8 @@
-# V26 Web v1.8.2 — Busca focada
+# V26 Web v1.9 — Agenda football-data.org
 
 Mudanças:
-- Interface limpa preservada.
-- Texto atualizado para v1.8.2.
-- Backend faz busca focada, filtro de relevância e deduplicação.
-- V26 Core continua como decisão final.
+- Nova seção: Agenda de jogos.
+- Chama GET /agenda no backend.
+- Permite selecionar jogo do dia e preencher times/competição automaticamente.
+- IA/V26 passam a usar nomes padronizados.
+- Backend requer FOOTBALL_DATA_TOKEN no Render.
