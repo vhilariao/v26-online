@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.3.1</title>
+  <title>V26 Web v3.9.4.1</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -62,8 +62,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.3.1</h1>
-      <div class="sub">Dashboard limpo: times dinâmicos → equivalência HT → Core V26 completo</div>
+      <h1>V26 Web v3.9.4.1</h1>
+      <div class="sub">Dashboard limpo: ranking saneado → Core V26 completo</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -445,9 +445,11 @@ function rowTable(rows, title) {
 
 function renderMarkets(s) {
   const groups = s.ranking_groups || {};
-  if (groups.official_entry) {
+  if (groups && (groups.official_entry || groups.no_official_entry || groups.rejected || groups.unsupported)) {
+    const noEntry = groups.no_official_entry ? '<div class="box final no"><h2>Sem entrada oficial V26</h2>Nenhum mercado passou com classe/stake operacional. C/D ficam apenas como rejeitados.</div>' : '';
     const html = [
-      rowTable([groups.official_entry], 'Entrada oficial V26'),
+      noEntry,
+      groups.official_entry ? rowTable([groups.official_entry], 'Entrada oficial V26') : '',
       rowTable(groups.equivalent_valid || [], 'Equivalentes válidos'),
       rowTable(groups.secondary_candidates || [], 'Candidatos secundários'),
       rowTable(groups.rejected || [], 'Rejeitados / sem entrada'),
