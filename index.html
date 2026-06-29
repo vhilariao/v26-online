@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.9</title>
+  <title>V26 Web v4.0.0</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -65,6 +65,9 @@
     .compactTable table th:nth-child(n+5), .compactTable table td:nth-child(n+5) { display:none; }
     .warningLine { color:#fde68a; font-weight:800; margin:8px 0 2px; }
     .hidden { display:none !important; }
+    pre.jsonBox { white-space:pre-wrap; word-break:break-word; background:#06101d; border:1px solid var(--line); border-radius:14px; padding:12px; color:#dbeafe; max-height:360px; overflow:auto; }
+    .auditItem { border:1px solid var(--line); border-radius:14px; padding:12px; background:#0b1220; margin:8px 0; }
+    .auditTop { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
   </style>
 </head>
 <body>
@@ -72,8 +75,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.9</h1>
-      <div class="sub">Dashboard limpo: resultado claro → Core V26</div>
+      <h1>V26 Web v4.0.0</h1>
+      <div class="sub">Banco de auditoria + importar análise do Chat → V26</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -206,11 +209,48 @@
     <div id="resultBox" class="hint">Prepare o jogo, extraia/revise odds Pinnacle e toque em Rodar V26 completo.</div>
   </section>
 
+  <section id="auditSection">
+    <h2>5. Banco de Auditoria V26</h2>
+    <div class="hint">
+      Salve a análise atual no banco em um clique. Depois do jogo, atualize resultado/lucro e classifique análise, execução e variância.
+    </div>
+    <div class="actions">
+      <button id="saveLastBtn" class="good" disabled>Salvar último resultado no Banco</button>
+      <button id="loadAuditBtn" class="secondary">Atualizar Banco/ROI</button>
+      <button id="showJsonBtn" class="secondary">Ver JSON para salvar</button>
+    </div>
+    <div id="auditInfo" class="hint"></div>
+
+    <details class="panel" style="margin-top:14px;">
+      <summary>Importar análise gerada no Chat</summary>
+      <div class="hint">
+        No chat, peça: “gere o JSON V26_DB para salvar no banco”. Cole aqui e toque em importar.
+      </div>
+      <textarea id="chatJsonInput" class="big" placeholder='Cole aqui o JSON V26_DB gerado no Chat'></textarea>
+      <div class="actions">
+        <button id="importChatBtn" class="good">Importar JSON do Chat</button>
+      </div>
+      <div id="chatImportInfo" class="hint"></div>
+    </details>
+
+    <details class="panel" style="margin-top:14px;" open>
+      <summary>Resumo e últimos registros</summary>
+      <div id="auditSummary" class="hint">Toque em “Atualizar Banco/ROI”.</div>
+      <div id="auditList"></div>
+    </details>
+
+    <details class="panel" style="margin-top:14px;">
+      <summary>JSON do último resultado</summary>
+      <pre id="auditJsonPreview" class="jsonBox">Nenhum resultado salvo ainda.</pre>
+    </details>
+  </section>
+
 </main>
 
 <script>
 const API = 'https://v26-core-api-2.onrender.com';
 const $ = id => document.getElementById(id);
+let lastV26Data = null;
 
 function setStatus(kind, text) {
   const el = $('status');
@@ -462,6 +502,9 @@ function cleanReasons(reasons, isBet) {
 }
 
 function renderResult(data) {
+  lastV26Data = data;
+  if ($('saveLastBtn')) $('saveLastBtn').disabled = false;
+  if ($('auditJsonPreview')) $('auditJsonPreview').textContent = JSON.stringify(buildAuditRecord(data), null, 2);
   const s = data.strategy || {};
   const groups = s.ranking_groups || {};
   const d = s.decision || {};
@@ -589,6 +632,148 @@ $('runBtn').addEventListener('click', async () => {
   } finally { $('runBtn').disabled = false; }
 });
 
+
+function confidenceTo10(x) {
+  const n = Number(x || 0);
+  return n > 10 ? Math.round((n / 10) * 10) / 10 : n;
+}
+
+function stakeNumber(x) {
+  if (x === null || x === undefined) return 0;
+  if (typeof x === 'number') return x;
+  const s = String(x).replace('R$', '').replace(',', '.').replace(/[^\d.-]/g, '');
+  return Number(s || 0);
+}
+
+function buildAuditRecord(data) {
+  const s = data.strategy || {};
+  const d = s.decision || {};
+  const final = s.v26_final || d || {};
+  const p = payload();
+  const isBet = (d.decision || data.decision) === 'BET_CANDIDATE';
+  const market = final.market || d.market || '';
+  const cls = final.classification || d.classification || '';
+  const confidenceRaw = final.confidence ?? d.confidence ?? 0;
+  const decisionState = isBet ? 'ENTRADA_CONDICIONAL' : 'NAO_APOSTAR';
+
+  return {
+    source: 'software',
+    date: todayLocalISO(),
+    competition: p.competition,
+    home_team: p.home_team,
+    away_team: p.away_team,
+    match: `${p.home_team} x ${p.away_team}`,
+    market,
+    odd_analyzed: Number(final.odd || d.odd || 0),
+    class_v26: cls,
+    confidence_0_10: confidenceTo10(confidenceRaw),
+    ev_percent: Number(final.ev ?? d.ev ?? 0),
+    stake_reais: stakeNumber(final.stake || d.stake || 0),
+    stake_units: stakeNumber(final.stake || d.stake || 0),
+    decision_state: decisionState,
+    lineup_status: 'nao_verificada',
+    beo_complete: false,
+    main_thesis: (s.advantage_hypotheses || {}).items ? (s.advantage_hypotheses.items[0] || '') : '',
+    market_represents_thesis: isBet,
+    neighbor_lines_compared: Boolean((data.odds_structure || {}).has_bilateral_goal_pattern || (data.odds_structure || {}).has_clean_ht_equivalent),
+    entry_made: false,
+    result_status: isBet ? 'pending' : 'no_bet',
+    notes: s.operational_decision || data.operational_alert || '',
+    odds_text: p.odds_text,
+    beo_json: {
+      context_ia: data.context_ia || {},
+      odds_structure: data.odds_structure || {},
+      market_first: s.market_first || {},
+      context_vs_price: s.context_vs_price || {},
+      core_decision: s.core_decision || {},
+    },
+    full_json: data
+  };
+}
+
+async function saveAuditRecord(record, importFromChat=false) {
+  const path = importFromChat ? '/audit/import-chat' : '/audit/entries';
+  const data = await request(path, {method:'POST', body:JSON.stringify(record)});
+  return data.entry || data;
+}
+
+async function refreshAudit() {
+  try {
+    const summary = await request('/audit/summary');
+    $('auditSummary').innerHTML = `
+      <div class="grid3">
+        <div class="metric"><b>${summary.total_records}</b><span>Registros</span></div>
+        <div class="metric"><b>${summary.entries_made}</b><span>Apostas feitas</span></div>
+        <div class="metric"><b>${Number(summary.roi_percent || 0).toFixed(2)}%</b><span>ROI</span></div>
+        <div class="metric"><b>R$ ${Number(summary.profit_loss_reais || 0).toFixed(2)}</b><span>Lucro/Prejuízo</span></div>
+        <div class="metric"><b>R$ ${Number(summary.stake_sum_reais || 0).toFixed(2)}</b><span>Stake somada</span></div>
+        <div class="metric"><b>${summary.settled}</b><span>Encerradas</span></div>
+      </div>
+      <h3>ROI por classe</h3>
+      <table><thead><tr><th>Classe</th><th>Total</th><th>Lucro/Prejuízo</th><th>Stake</th><th>ROI</th></tr></thead><tbody>
+      ${(summary.by_class || []).map(r => `<tr><td>${r.class_v26}</td><td>${r.total}</td><td>R$ ${Number(r.profit_loss_reais||0).toFixed(2)}</td><td>R$ ${Number(r.stake_sum_reais||0).toFixed(2)}</td><td>${Number(r.roi_percent||0).toFixed(2)}%</td></tr>`).join('')}
+      </tbody></table>
+    `;
+    const list = await request('/audit/entries?limit=15');
+    const entries = list.entries || [];
+    $('auditList').innerHTML = entries.length ? entries.map(e => `
+      <div class="auditItem">
+        <div class="auditTop">
+          <b>#${e.id} · ${e.match || 'Jogo'}</b>
+          <span class="badge">${e.decision_state || 'N/D'} · ${e.class_v26 || 'N/D'}</span>
+        </div>
+        <div class="small" style="margin-top:6px;">
+          ${e.market || 'Mercado não informado'} @${e.odd_analyzed || 'N/D'} · EV ${Number(e.ev_percent||0).toFixed(1)}% · Stake R$ ${Number(e.stake_reais||0).toFixed(2)}
+        </div>
+        <div class="small" style="color:var(--muted);margin-top:4px;">
+          Resultado: ${e.result_status || 'pending'} · P/L R$ ${Number(e.profit_loss_reais||0).toFixed(2)}
+        </div>
+      </div>
+    `).join('') : '<div class="hint">Nenhum registro salvo ainda.</div>';
+  } catch (err) {
+    $('auditSummary').innerHTML = `<span class="error">Erro ao carregar banco: ${err.message}</span>`;
+  }
+}
+
+$('saveLastBtn').addEventListener('click', async () => {
+  if (!lastV26Data) return alert('Rode uma análise primeiro.');
+  $('saveLastBtn').disabled = true;
+  try {
+    const record = buildAuditRecord(lastV26Data);
+    const entry = await saveAuditRecord(record, false);
+    $('auditInfo').innerHTML = `<span class="success">Salvo no banco: #${entry.id} · ${entry.match || ''} · ${entry.market || ''}</span>`;
+    await refreshAudit();
+  } catch (err) {
+    $('auditInfo').innerHTML = `<span class="error">Erro ao salvar: ${err.message}</span>`;
+  } finally {
+    $('saveLastBtn').disabled = false;
+  }
+});
+
+$('loadAuditBtn').addEventListener('click', refreshAudit);
+
+$('showJsonBtn').addEventListener('click', () => {
+  if (!lastV26Data) {
+    $('auditJsonPreview').textContent = 'Rode uma análise primeiro.';
+    return;
+  }
+  $('auditJsonPreview').textContent = JSON.stringify(buildAuditRecord(lastV26Data), null, 2);
+});
+
+$('importChatBtn').addEventListener('click', async () => {
+  const raw = $('chatJsonInput').value.trim();
+  if (!raw) return alert('Cole o JSON do Chat primeiro.');
+  try {
+    const parsed = JSON.parse(raw);
+    const entry = await saveAuditRecord(parsed, true);
+    $('chatImportInfo').innerHTML = `<span class="success">JSON do Chat importado: #${entry.id} · ${entry.match || ''} · ${entry.market || ''}</span>`;
+    await refreshAudit();
+  } catch (err) {
+    $('chatImportInfo').innerHTML = `<span class="error">JSON inválido ou erro no banco: ${err.message}</span>`;
+  }
+});
+
+
 function todayLocalISO() {
   const d = new Date();
   const y = d.getFullYear();
@@ -650,6 +835,7 @@ async function loadAgendaToday() {
 }
 
 loadAgendaToday();
+refreshAudit();
 request('/health').then(h => setStatus('ok', h.version || 'V26 pronto')).catch(()=>setStatus('bad','Backend offline'));
 </script>
 </body>

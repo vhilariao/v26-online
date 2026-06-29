@@ -1,5 +1,3 @@
-# V26 Web v3.3 — OCR recupera HT
+# V26 Web v4.0.0 — Banco de Auditoria
 
-Mudanças:
-- Corrige OCR que perde "1º Tempo" no mercado Total da Equipe Over 0.5.
-- Mantém missão de ouro v3.2.
+Frontend com botão Salvar no Banco e importar JSON do Chat.
