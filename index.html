@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.1.1</title>
+  <title>V26 Web v3.9.2.1</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -62,8 +62,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.1.1</h1>
-      <div class="sub">Dashboard limpo: Vision rápida → GPT Contexto → Core V26 completo</div>
+      <h1>V26 Web v3.9.2.1</h1>
+      <div class="sub">Dashboard limpo: EV conservador → GPT Contexto → Core V26 completo</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -72,7 +72,7 @@
 <main>
   <section>
     <h2>1. Mensagem inicial para IA V26</h2>
-    <div class="hint">Escreva como se estivesse falando aqui. A IA prepara times, campeonato e contexto em português.</div>
+    <div class="hint">Escreva como se estivesse falando aqui. A IA prepara times, campeonato e contexto em português. O favorito será detectado pelas odds/contexto; o Time 1 não é assumido automaticamente como favorito.</div>
     <textarea id="initialMessage" class="big" placeholder="Ex: Vamos rodar V26 no jogo Alemanha x Paraguai pela Copa do Mundo FIFA. Alemanha muito favorita, ML/classificar espremidos, Paraguai reativo/recuado, procurar mercado de valor no HT."></textarea>
     <div class="actions">
       <button id="parseMsgBtn" class="secondary">Preparar jogo pela mensagem</button>
@@ -82,7 +82,7 @@
 
     <div class="grid">
       <div>
-        <label>Time 1 / favorito</label>
+        <label>Time 1</label>
         <input id="homeTeam" placeholder="Alemanha" />
       </div>
       <div>
