@@ -3,55 +3,58 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.6</title>
+  <title>V26 Web v3.7.1</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
-      --bg:#0b1220; --card:#111a2e; --card2:#16243d; --muted:#9aa6bb;
-      --text:#e8edf7; --line:#263653; --blue:#5db7ff; --green:#16a765;
-      --warn:#eab308; --red:#ef4444; --purple:#8b5cf6;
+      --bg:#08111f; --card:#101a2e; --card2:#14213a; --text:#e9eef8; --muted:#97a3b7;
+      --line:#263852; --blue:#5bbcff; --green:#16a765; --warn:#f59e0b; --red:#ef4444;
+      --soft:#0b1528;
     }
     * { box-sizing:border-box; }
-    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
-    .wrap { max-width:920px; margin:0 auto; padding:18px; }
-    header { position:sticky; top:0; z-index:2; background:rgba(11,18,32,.94); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
-    .head { max-width:920px; margin:0 auto; padding:14px 18px; display:flex; align-items:center; gap:12px; }
-    .logo { width:48px; height:48px; border-radius:14px; display:grid; place-items:center; font-weight:900; color:#07111f; background:linear-gradient(135deg,#5bd2ff,#9a7cff); }
-    h1 { margin:0; font-size:22px; }
-    .sub { color:var(--muted); font-size:14px; margin-top:3px; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+    header { position:sticky; top:0; z-index:5; background:rgba(8,17,31,.94); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
+    .head { max-width:940px; margin:0 auto; padding:14px 16px; display:flex; gap:12px; align-items:center; }
+    .logo { width:50px; height:50px; border-radius:16px; background:linear-gradient(135deg,#55c7ff,#a78bfa); color:#04111f; display:grid; place-items:center; font-weight:900; font-size:21px; }
+    h1 { margin:0; font-size:23px; }
+    .sub { color:var(--muted); font-size:14px; margin-top:2px; }
     .status { margin-left:auto; border:1px solid var(--line); border-radius:999px; padding:8px 12px; color:var(--muted); white-space:nowrap; }
-    .dot { display:inline-block; width:10px; height:10px; background:var(--warn); border-radius:50%; margin-right:7px; }
-    .ok .dot { background:var(--green); }
-    .bad .dot { background:var(--red); }
-    section { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; margin:16px 0; }
+    .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--warn); margin-right:7px; }
+    .ok .dot { background:var(--green); } .bad .dot { background:var(--red); }
+    main { max-width:940px; margin:0 auto; padding:16px; }
+    section, details.panel { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; margin:14px 0; }
     h2 { margin:0 0 12px; font-size:20px; }
-    label { display:block; margin:12px 0 6px; color:#cbd5e1; font-weight:700; }
-    input, textarea, select { width:100%; border:1px solid var(--line); border-radius:14px; padding:13px; background:#08111f; color:var(--text); font-size:16px; }
-    textarea { min-height:130px; resize:vertical; line-height:1.35; }
+    h3 { margin:16px 0 8px; font-size:17px; }
+    label { display:block; margin:12px 0 6px; font-weight:800; color:#cbd5e1; }
+    input, textarea, select { width:100%; border:1px solid var(--line); background:#07111f; color:var(--text); border-radius:14px; padding:13px; font-size:16px; }
+    textarea { min-height:120px; line-height:1.35; resize:vertical; }
+    .big { min-height:150px; font-size:17px; }
     .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-    @media (max-width:720px) { .grid, .grid3 { grid-template-columns:1fr; } .status { display:none; } }
-    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-    button { border:0; border-radius:15px; padding:14px 16px; font-size:16px; font-weight:800; color:#07111f; background:#dbeafe; cursor:pointer; }
-    button.primary { background:linear-gradient(135deg,#5bd2ff,#a78bfa); }
+    @media (max-width:740px) { .grid,.grid3{grid-template-columns:1fr;} .status{display:none;} main{padding:12px;} }
+    button { border:0; border-radius:15px; padding:14px 16px; font-weight:900; font-size:16px; color:#04111f; background:#dbeafe; cursor:pointer; }
+    button.primary { background:linear-gradient(135deg,#5bc7ff,#a78bfa); }
     button.good { background:#86efac; }
-    button.secondary { background:#263653; color:var(--text); }
-    button:disabled { opacity:.6; cursor:not-allowed; }
-    .hint { color:var(--muted); font-size:14px; line-height:1.45; }
-    .final { border-color:#14532d; background:#0d2a22; }
-    .final.no { border-color:#7f1d1d; background:#2a1013; }
-    .final h2 { color:#bbf7d0; }
-    .no h2 { color:#fecaca; }
-    .metric { background:#08111f; border:1px solid var(--line); border-radius:14px; padding:13px; }
+    button.secondary { background:#263852; color:var(--text); }
+    button.warn { background:#fde68a; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .hint { color:var(--muted); line-height:1.45; font-size:14px; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .chip { border:1px solid var(--line); background:#07111f; border-radius:999px; padding:7px 10px; color:#cbd5e1; font-size:14px; }
+    .box { background:var(--card2); border:1px solid #264977; border-radius:16px; padding:14px; line-height:1.45; }
+    .final { background:#0b2a22; border-color:#14532d; } .final h2{color:#bbf7d0;}
+    .final.no { background:#2a1013; border-color:#7f1d1d; } .final.no h2{color:#fecaca;}
+    .metric { background:#07111f; border:1px solid var(--line); border-radius:14px; padding:13px; min-height:86px; }
     .metric b { display:block; font-size:22px; margin-bottom:4px; }
     .metric span { color:var(--muted); }
-    .pill { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:6px 10px; color:#cbd5e1; background:#07111f; font-size:13px; }
-    .box { background:var(--card2); border:1px solid #27446f; border-radius:16px; padding:14px; line-height:1.45; }
     table { width:100%; border-collapse:collapse; font-size:14px; }
-    th,td { border-bottom:1px solid var(--line); padding:9px 6px; text-align:left; vertical-align:top; }
+    th,td { border-bottom:1px solid var(--line); padding:9px 5px; text-align:left; vertical-align:top; }
     th { color:#cbd5e1; }
-    details { border:1px solid var(--line); border-radius:16px; padding:12px; background:#0d1729; }
-    summary { font-weight:800; cursor:pointer; }
+    summary { font-weight:900; cursor:pointer; }
+    .success { color:#bbf7d0; } .error { color:#fecaca; } .warning { color:#fde68a; }
+    .small { font-size:13px; }
+    .hidden { display:none !important; }
   </style>
 </head>
 <body>
@@ -59,30 +62,38 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.6</h1>
-      <div class="sub">Fluxo único: Pinnacle limpa → IA executa V26 → Core classifica</div>
+      <h1>V26 Web v3.7.1</h1>
+      <div class="sub">Dashboard limpo: mensagem corrigida → IA Vision/OCR → Rodar V26</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
 </header>
 
-<main class="wrap">
+<main>
   <section>
-    <h2>1. Jogo</h2>
+    <h2>1. Mensagem inicial para IA V26</h2>
+    <div class="hint">Escreva como se estivesse falando aqui. A IA prepara times, campeonato e contexto em português.</div>
+    <textarea id="initialMessage" class="big" placeholder="Ex: Vamos rodar V26 no jogo Alemanha x Paraguai pela Copa do Mundo FIFA. Alemanha muito favorita, ML/classificar espremidos, Paraguai reativo/recuado, procurar mercado de valor no HT."></textarea>
+    <div class="actions">
+      <button id="parseMsgBtn" class="secondary">Preparar jogo pela mensagem</button>
+      <button id="agendaBtn" class="secondary">Agenda do dia</button>
+    </div>
+    <div id="messageInfo" class="chips"></div>
+
     <div class="grid">
       <div>
         <label>Time 1 / favorito</label>
-        <input id="homeTeam" value="Alemanha" />
+        <input id="homeTeam" placeholder="Alemanha" />
       </div>
       <div>
         <label>Time 2</label>
-        <input id="awayTeam" value="Paraguai" />
+        <input id="awayTeam" placeholder="Paraguai" />
       </div>
     </div>
     <div class="grid">
       <div>
         <label>Competição</label>
-        <input id="competition" value="Copa do Mundo FIFA" />
+        <input id="competition" placeholder="Copa do Mundo FIFA" />
       </div>
       <div>
         <label>Modo</label>
@@ -93,13 +104,29 @@
         </select>
       </div>
     </div>
-    <label>Contexto manual / leitura mestre</label>
-    <textarea id="contextText" placeholder="Ex: Alemanha muito favorita, força ofensiva superior, Paraguai reativo/recuado, ML/classificar espremidos, melhor caminho pode ser HT..."></textarea>
+    <label>Contexto V26 enviado ao sistema</label>
+    <textarea id="contextText" placeholder="A mensagem inicial será copiada aqui. Você pode ajustar antes de rodar."></textarea>
   </section>
 
   <section>
-    <h2>2. Entrada Manual Pinnacle</h2>
-    <div class="hint">Fluxo oficial. OCR é apenas rascunho; a odd enviada ao V26 deve estar limpa.</div>
+    <h2>2. Prints da Pinnacle — IA Vision + OCR</h2>
+    <div class="hint">
+      Fluxo recomendado: envie vários prints. O OCR lê texto bruto; a IA Vision entende blocos/colunas/período/time/linha/odd.
+      Depois revise as odds limpas antes de rodar.
+    </div>
+    <label>Fotos/prints da Pinnacle</label>
+    <input id="pinnacleImages" type="file" accept="image/*" multiple />
+    <div class="actions">
+      <button id="visionBtn" class="good">Extrair odds com IA Vision + OCR</button>
+      <button id="ocrOnlyBtn" class="secondary">Só OCR auxiliar</button>
+    </div>
+    <div id="visionInfo" class="hint"></div>
+    <label>Odds extraídas / limpas para revisão</label>
+    <textarea id="oddsText" placeholder="As odds limpas da IA Vision aparecerão aqui. Você também pode colar/manual."></textarea>
+  </section>
+
+  <details class="panel">
+    <summary>Entrada Manual Pinnacle — plano de segurança</summary>
     <div class="grid3">
       <div>
         <label>Mercado</label>
@@ -114,78 +141,47 @@
           <option value="cards">Cartões</option>
         </select>
       </div>
-      <div>
-        <label>Time</label>
-        <input id="manualTeam" value="Alemanha" />
-      </div>
+      <div><label>Time</label><input id="manualTeam" placeholder="Alemanha" /></div>
       <div>
         <label>Período</label>
-        <select id="manualPeriod">
-          <option value="FT">Partida</option>
-          <option value="HT">1º Tempo</option>
-        </select>
+        <select id="manualPeriod"><option value="FT">Partida</option><option value="HT">1º Tempo</option></select>
       </div>
     </div>
     <div class="grid3">
       <div>
         <label>Seleção</label>
-        <select id="manualSide">
-          <option value="Over">Over / Acima</option>
-          <option value="Under">Under / Menos</option>
-          <option value="ML">ML / Vencer</option>
-          <option value="Sim">Sim</option>
-          <option value="Não">Não</option>
-        </select>
+        <select id="manualSide"><option value="Over">Over</option><option value="Under">Under</option><option value="ML">ML</option><option value="Sim">Sim</option><option value="Não">Não</option></select>
       </div>
-      <div>
-        <label>Linha</label>
-        <input id="manualLine" inputmode="decimal" placeholder="Ex: 0.5, -0.5, 1.25" />
-      </div>
-      <div>
-        <label>Odd Pinnacle</label>
-        <input id="manualOdd" inputmode="decimal" placeholder="Ex: 1.769" />
-      </div>
+      <div><label>Linha</label><input id="manualLine" inputmode="decimal" placeholder="-0.5" /></div>
+      <div><label>Odd</label><input id="manualOdd" inputmode="decimal" placeholder="1.769" /></div>
     </div>
-    <label>Linha limpa gerada</label>
+    <label>Linha limpa</label>
     <input id="manualPreview" readonly />
     <div class="actions">
-      <button id="manualAddBtn" class="good">Adicionar odd limpa</button>
+      <button id="manualAddBtn" class="good">Adicionar manual</button>
       <button id="germanyHtBtn" class="secondary">Alemanha -0.5 HT</button>
       <button id="brazilTtHtBtn" class="secondary">Brasil TT HT Over 0.5</button>
     </div>
-  </section>
+  </details>
 
   <section>
-    <h2>3. Odds Pinnacle para V26</h2>
-    <textarea id="oddsText" placeholder="Ex:
-Handicap Alemanha HT -0.5 @1.769 [Pinnacle]
-Resultado Alemanha HT ML @1.787 [Pinnacle]"></textarea>
+    <h2>3. Rodar V26</h2>
+    <div class="hint">Um único botão. Sem odds automáticas. Sem botão IA/Core separado.</div>
     <div class="actions">
       <button id="cleanBtn" class="secondary">Limpar odds</button>
       <button id="runBtn" class="primary">Rodar V26</button>
     </div>
   </section>
 
-  <details>
-    <summary>OCR auxiliar por foto</summary>
-    <section style="margin:12px 0 0;">
-      <div class="hint">Use só para rascunho. Revise antes de rodar V26.</div>
-      <label>Fotos/prints da Pinnacle</label>
-      <input id="pinnacleImage" type="file" accept="image/*" multiple />
-      <div class="actions">
-        <button id="ocrBtn" class="secondary">Ler foto</button>
-        <button id="useOcrBtn" class="secondary">Usar OCR nas odds</button>
-      </div>
-      <div id="ocrInfo" class="hint"></div>
-      <label>Texto OCR</label>
-      <textarea id="ocrText"></textarea>
-    </section>
-  </details>
-
   <section id="resultSection">
     <h2>4. Resultado</h2>
-    <div id="resultBox" class="hint">Preencha jogo, contexto e odds limpas. Depois toque em Rodar V26.</div>
+    <div id="resultBox" class="hint">Prepare o jogo, extraia/revise odds Pinnacle e toque em Rodar V26.</div>
   </section>
+
+  <details class="panel">
+    <summary>Agenda do dia — lembrete</summary>
+    <div id="agendaBox" class="hint">A agenda não decide nada; só ajuda a lembrar jogos do dia.</div>
+  </details>
 </main>
 
 <script>
@@ -197,25 +193,18 @@ function setStatus(kind, text) {
   el.className = 'status ' + (kind || '');
   el.innerHTML = '<span class="dot"></span>' + text;
 }
-
 async function request(path, options={}) {
-  const res = await fetch(API + path, {
-    headers: {'Content-Type':'application/json'},
-    ...options
-  });
+  const res = await fetch(API + path, {headers:{'Content-Type':'application/json'}, ...options});
   const text = await res.text();
-  let data;
-  try { data = text ? JSON.parse(text) : {}; } catch { data = {raw:text}; }
+  let data; try { data = text ? JSON.parse(text) : {}; } catch { data = {raw:text}; }
   if (!res.ok) throw new Error(data.detail || data.message || text || ('HTTP ' + res.status));
   return data;
 }
-
 function frontendCleanOddsText(text) {
   let t = String(text || '').replace(/\r/g, '\n');
   t = t.replace(/@\s*([0-9]+(?:[.,][0-9]+)?)\s*\n\s*\[?Pinnacle\]?/gi, '@$1 [Pinnacle]');
   t = t.replace(/\[\s*Pinnacle\s*\]/gi, '[Pinnacle]');
-  const seen = new Set();
-  const out = [];
+  const seen = new Set(), out = [];
   for (let line of t.split(/\n+/)) {
     line = line.trim().replace(/[−–—]/g, '-').replace(/\s+/g, ' ');
     if (!line) continue;
@@ -227,95 +216,165 @@ function frontendCleanOddsText(text) {
   }
   return out.join('\n');
 }
-
 async function backendCleanOddsText(text) {
   try {
-    const data = await request('/odds/clean-pinnacle', { method:'POST', body:JSON.stringify({odds_text:text || ''}) });
+    const data = await request('/odds/clean-pinnacle', {method:'POST', body:JSON.stringify({odds_text:text || ''})});
     return data.clean_text || frontendCleanOddsText(text);
-  } catch {
-    return frontendCleanOddsText(text);
-  }
+  } catch { return frontendCleanOddsText(text); }
 }
 
+$('parseMsgBtn').addEventListener('click', async () => {
+  setStatus('', 'Preparando jogo');
+  try {
+    const data = await request('/message/parse-initial', {method:'POST', body:JSON.stringify({message:$('initialMessage').value})});
+    if (data.home_team) $('homeTeam').value = data.home_team;
+    if (data.away_team) $('awayTeam').value = data.away_team;
+    if (data.competition) $('competition').value = data.competition;
+    $('contextText').value = data.context || $('initialMessage').value;
+    $('manualTeam').value = data.home_team || $('homeTeam').value;
+    $('messageInfo').innerHTML = `
+      <span class="chip">Time 1: ${data.home_team || 'revisar'}</span>
+      <span class="chip">Time 2: ${data.away_team || 'revisar'}</span>
+      <span class="chip">Competição: ${data.competition || 'revisar'}</span>
+      <span class="chip">Confiança: ${Math.round((data.confidence || 0)*100)}%</span>`;
+    setStatus('ok','Jogo preparado');
+  } catch (err) {
+    $('messageInfo').innerHTML = `<span class="chip error">Erro: ${err.message}</span>`;
+    setStatus('bad','Erro');
+  }
+});
+
 function buildManualLine() {
-  const type = $('manualMarketType').value;
-  const team = $('manualTeam').value.trim();
-  const period = $('manualPeriod').value;
-  const side = $('manualSide').value;
+  const type = $('manualMarketType').value, team = $('manualTeam').value.trim();
+  const period = $('manualPeriod').value, side = $('manualSide').value;
   const line = $('manualLine').value.replace(',', '.').trim();
   const odd = $('manualOdd').value.replace(',', '.').trim();
   const p = period === 'HT' ? ' HT' : '';
   if (!odd) return '';
   let market = '';
-  if (type === 'team_total') {
-    if (!team || !line) return '';
-    market = `${team} Total da Equipe${p} ${side} ${line}`;
-  } else if (type === 'total_goals') {
-    if (!line) return '';
-    market = `Total gols${p} ${side} ${line}`;
-  } else if (type === 'handicap') {
-    if (!team || !line) return '';
-    market = `Handicap ${team}${p} ${line}`;
-  } else if (type === 'moneyline') {
-    if (!team) return '';
-    market = `Resultado ${team}${p} ML`;
-  } else if (type === 'qualify') {
-    if (!team) return '';
-    market = `Classificar ${team}`;
-  } else if (type === 'btts') {
-    market = `Ambas marcam ${side}`;
-  } else if (type === 'corners') {
-    if (!line) return '';
-    market = `Escanteios${p} ${side} ${line}`;
-  } else if (type === 'cards') {
-    if (!line) return '';
-    market = `Cartões${p} ${side} ${line}`;
-  }
+  if (type === 'team_total') { if (!team || !line) return ''; market = `${team} Total da Equipe${p} ${side} ${line}`; }
+  else if (type === 'total_goals') { if (!line) return ''; market = `Total gols${p} ${side} ${line}`; }
+  else if (type === 'handicap') { if (!team || !line) return ''; market = `Handicap ${team}${p} ${line}`; }
+  else if (type === 'moneyline') { if (!team) return ''; market = `Resultado ${team}${p} ML`; }
+  else if (type === 'qualify') { if (!team) return ''; market = `Classificar ${team}`; }
+  else if (type === 'btts') market = `Ambas marcam ${side}`;
+  else if (type === 'corners') { if (!line) return ''; market = `Escanteios${p} ${side} ${line}`; }
+  else if (type === 'cards') { if (!line) return ''; market = `Cartões${p} ${side} ${line}`; }
   return `${market} @${odd} [Pinnacle]`;
 }
-
-function updatePreview() { $('manualPreview').value = buildManualLine(); }
+function updatePreview(){ $('manualPreview').value = buildManualLine(); }
 ['manualMarketType','manualTeam','manualPeriod','manualSide','manualLine','manualOdd'].forEach(id => {
-  $(id).addEventListener('input', updatePreview);
-  $(id).addEventListener('change', updatePreview);
+  $(id).addEventListener('input', updatePreview); $(id).addEventListener('change', updatePreview);
 });
 updatePreview();
-
 $('manualAddBtn').addEventListener('click', () => {
   const line = buildManualLine();
   if (!line) return alert('Preencha mercado, linha quando aplicável e odd.');
   $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), line].filter(Boolean).join('\n'));
 });
-
 $('germanyHtBtn').addEventListener('click', () => {
-  const line = 'Handicap Alemanha HT -0.5 @1.769 [Pinnacle]';
-  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), line].filter(Boolean).join('\n'));
+  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), 'Handicap Alemanha HT -0.5 @1.769 [Pinnacle]'].filter(Boolean).join('\n'));
 });
 $('brazilTtHtBtn').addEventListener('click', () => {
-  const line = 'Brasil Total da Equipe HT Over 0.5 @1.740 [Pinnacle]';
-  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), line].filter(Boolean).join('\n'));
+  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), 'Brasil Total da Equipe HT Over 0.5 @1.740 [Pinnacle]'].filter(Boolean).join('\n'));
+});
+
+async function fileToCompressedDataUrl(file, maxSide=1400, quality=.82) {
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = reject;
+    im.src = URL.createObjectURL(file);
+  });
+  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+async function runOcrOnly(files) {
+  if (!window.Tesseract) return '';
+  const parts = [];
+  for (let i=0;i<files.length;i++) {
+    $('visionInfo').innerHTML = `OCR ${i+1}/${files.length}...`;
+    const result = await Tesseract.recognize(files[i], 'eng+por');
+    parts.push(result.data.text || '');
+  }
+  return frontendCleanOddsText(parts.join('\n'));
+}
+
+$('ocrOnlyBtn').addEventListener('click', async () => {
+  const files = Array.from($('pinnacleImages').files || []);
+  if (!files.length) return alert('Selecione uma ou mais fotos.');
+  $('ocrOnlyBtn').disabled = true;
+  try {
+    const text = await runOcrOnly(files);
+    $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), text].filter(Boolean).join('\n'));
+    $('visionInfo').innerHTML = '<span class="warning">OCR auxiliar concluído. Revise as linhas.</span>';
+  } finally { $('ocrOnlyBtn').disabled = false; }
+});
+
+$('visionBtn').addEventListener('click', async () => {
+  const files = Array.from($('pinnacleImages').files || []);
+  if (!files.length) return alert('Selecione uma ou mais fotos.');
+  $('visionBtn').disabled = true;
+  setStatus('', 'IA Vision lendo prints');
+  try {
+    const ocrText = await runOcrOnly(files);
+    const images = [];
+    for (let i=0;i<files.length;i++) {
+      $('visionInfo').innerHTML = `Preparando imagem ${i+1}/${files.length}...`;
+      images.push({filename:files[i].name, data_url:await fileToCompressedDataUrl(files[i])});
+    }
+    $('visionInfo').innerHTML = 'Enviando para IA Vision...';
+    const data = await request('/vision/pinnacle/extract', {
+      method:'POST',
+      body:JSON.stringify({
+        initial_message:$('initialMessage').value,
+        ocr_text:ocrText,
+        images
+      })
+    });
+    if (data.status === 'setup_required') {
+      $('visionInfo').innerHTML = `<span class="warning">${data.message} Use OCR/manual por enquanto.</span>`;
+      $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), ocrText].filter(Boolean).join('\n'));
+    } else if (data.status !== 'ok') {
+      $('visionInfo').innerHTML = `<span class="error">${data.message || 'Falha na IA Vision.'}</span>`;
+    } else {
+      $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), data.clean_text || ''].filter(Boolean).join('\n'));
+      const conf = Math.round((data.extraction_confidence || 0) * 100);
+      const warn = (data.warnings || []).length ? ' Avisos: ' + data.warnings.join(' | ') : '';
+      $('visionInfo').innerHTML = `<span class="success">IA Vision concluiu. Confiança leitura: ${conf}%.</span>${warn}`;
+      if (data.match_hint) {
+        if (!$('homeTeam').value && data.match_hint.home_team) $('homeTeam').value = data.match_hint.home_team;
+        if (!$('awayTeam').value && data.match_hint.away_team) $('awayTeam').value = data.match_hint.away_team;
+        if (!$('competition').value && data.match_hint.competition) $('competition').value = data.match_hint.competition;
+      }
+    }
+    setStatus('ok','Odds preparadas');
+  } catch (err) {
+    $('visionInfo').innerHTML = `<span class="error">Erro: ${err.message}</span>`;
+    setStatus('bad','Erro IA Vision');
+  } finally { $('visionBtn').disabled = false; }
 });
 
 $('cleanBtn').addEventListener('click', async () => {
   $('oddsText').value = await backendCleanOddsText($('oddsText').value);
 });
-
 function payload() {
   return {
-    home_team: $('homeTeam').value.trim(),
-    away_team: $('awayTeam').value.trim(),
-    competition: $('competition').value.trim(),
-    mode: $('mode').value,
-    odds_text: $('oddsText').value,
-    context: $('contextText').value
+    home_team:$('homeTeam').value.trim(),
+    away_team:$('awayTeam').value.trim(),
+    competition:$('competition').value.trim(),
+    mode:$('mode').value,
+    odds_text:$('oddsText').value,
+    context:$('contextText').value || $('initialMessage').value
   };
 }
-
-function pct(x) {
-  if (x === null || x === undefined || x === '') return 'N/D';
-  return Number(x).toFixed(1) + '%';
-}
-function val(x) { return x === null || x === undefined || x === '' ? 'N/D' : x; }
+function pct(x){ if(x===null||x===undefined||x==='') return 'N/D'; return Number(x).toFixed(1)+'%'; }
+function val(x){ return x===null||x===undefined||x==='' ? 'N/D' : x; }
 
 function renderResult(data) {
   const s = data.strategy || {};
@@ -323,17 +382,14 @@ function renderResult(data) {
   const final = s.v26_final || d || {};
   const isBet = (d.decision || data.decision) === 'BET_CANDIDATE';
   const reasons = d.reasons || final.reasons || [];
-  const boxClass = isBet ? 'final' : 'final no';
-
   $('resultBox').innerHTML = `
-    <div class="${boxClass}">
+    <div class="box ${isBet ? 'final' : 'final no'}">
       <h2>${isBet ? 'CANDIDATO À ENTRADA V26' : 'NÃO APOSTAR'}</h2>
       <div style="font-size:20px;line-height:1.35;">
         <b>${val(final.market || d.market)}</b><br>
         Odd ${val(final.odd || d.odd)} · Classe ${val(final.classification || d.classification)} · EV ${pct(final.ev ?? d.ev)} · Stake ${val(final.stake || d.stake)}
       </div>
     </div>
-
     <div class="grid3" style="margin-top:14px;">
       <div class="metric"><b>${val(final.classification || d.classification)}</b><span>Classe V26</span></div>
       <div class="metric"><b>${pct(final.ev ?? d.ev)}</b><span>EV</span></div>
@@ -342,79 +398,63 @@ function renderResult(data) {
       <div class="metric"><b>${pct(final.confidence ?? d.confidence)}</b><span>Confiança</span></div>
       <div class="metric"><b>${pct(final.risk ?? d.risk)}</b><span>Risco</span></div>
     </div>
-
     <h2 style="margin-top:18px;">Leitura V26</h2>
     <div class="box">${s.headline || ''}<br><br>${s.operational_decision || data.operational_alert || ''}</div>
-
     <h2 style="margin-top:18px;">Mercado primeiro</h2>
     <div class="box">${(s.market_first || {}).reading || ''}</div>
-
     <h2 style="margin-top:18px;">Contexto contra a odd</h2>
     <div class="box">${(s.context_vs_price || {}).reading || ''}</div>
-
     <h2 style="margin-top:18px;">Por que passou/reprovou</h2>
     <div class="box"><ul>${reasons.map(r => `<li>${r}</li>`).join('') || '<li>Sem justificativas detalhadas retornadas.</li>'}</ul></div>
-
-    <details style="margin-top:16px;">
+    <details class="panel" style="margin-top:16px;">
       <summary>Ver mercados comparados</summary>
       ${renderMarkets(s)}
     </details>
   `;
   setStatus(isBet ? 'ok' : 'bad', isBet ? 'Entrada V26' : 'Não apostar');
 }
-
 function renderMarkets(s) {
   const rows = (((s.ia_selection_internal || {}).ranking) || []).slice(0,10);
   if (!rows.length) return '<div class="hint">Sem ranking retornado.</div>';
   return `<table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risco</th><th>Stake</th></tr></thead><tbody>
-    ${rows.map((r,i)=>`<tr>
-      <td>${i+1}</td><td>${(r.market||{}).name||''}</td><td>${val((r.market||{}).odds)}</td>
-      <td>${val(r.classification)}</td><td>${pct(r.ev_percent)}</td><td>${val(r.ic)}</td>
-      <td>${pct(r.confidence)}</td><td>${pct(r.risk)}</td><td>${r.stake_units ? 'R$ '+r.stake_units+',00' : 'R$ 0,00'}</td>
-    </tr>`).join('')}
+  ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${(r.market||{}).name||''}</td><td>${val((r.market||{}).odds)}</td><td>${val(r.classification)}</td><td>${pct(r.ev_percent)}</td><td>${val(r.ic)}</td><td>${pct(r.confidence)}</td><td>${pct(r.risk)}</td><td>${r.stake_units ? 'R$ '+r.stake_units+',00' : 'R$ 0,00'}</td></tr>`).join('')}
   </tbody></table>`;
 }
-
 $('runBtn').addEventListener('click', async () => {
   $('runBtn').disabled = true;
   setStatus('', 'Rodando V26');
   $('resultBox').innerHTML = '<div class="hint">Limpando odds, executando leitura V26 e classificando...</div>';
   try {
     $('oddsText').value = await backendCleanOddsText($('oddsText').value);
-    const data = await request('/analyze/ia-v26', { method:'POST', body:JSON.stringify(payload()) });
+    const data = await request('/analyze/ia-v26', {method:'POST', body:JSON.stringify(payload())});
     renderResult(data);
   } catch (err) {
-    $('resultBox').innerHTML = `<div class="final no"><h2>Erro</h2>${err.message || err}</div>`;
-    setStatus('bad', 'Erro');
-  } finally {
-    $('runBtn').disabled = false;
-  }
+    $('resultBox').innerHTML = `<div class="box final no"><h2>Erro</h2>${err.message || err}</div>`;
+    setStatus('bad','Erro');
+  } finally { $('runBtn').disabled = false; }
 });
 
-async function runOcr() {
-  const files = $('pinnacleImage').files ? Array.from($('pinnacleImage').files) : [];
-  if (!files.length) return alert('Selecione uma ou mais fotos.');
-  if (!window.Tesseract) return alert('OCR não carregou.');
-  $('ocrBtn').disabled = true;
-  const parts = [];
+$('agendaBtn').addEventListener('click', async () => {
+  $('agendaBox').innerHTML = 'Carregando agenda...';
   try {
-    for (let i=0;i<files.length;i++) {
-      $('ocrInfo').textContent = `Lendo foto ${i+1}/${files.length}...`;
-      const result = await Tesseract.recognize(files[i], 'eng+por');
-      parts.push(result.data.text || '');
+    const data = await request('/agenda');
+    const games = data.matches || data.games || data.items || [];
+    if (!games.length) {
+      $('agendaBox').innerHTML = 'Nenhum jogo retornado pela agenda. Use a mensagem inicial normalmente.';
+      return;
     }
-    $('ocrText').value = frontendCleanOddsText(parts.join('\n'));
-    $('ocrInfo').textContent = 'OCR concluído. Revise antes de usar.';
-  } finally {
-    $('ocrBtn').disabled = false;
+    $('agendaBox').innerHTML = games.slice(0,20).map(g => {
+      const home = g.home_team || g.home || g.homeTeam || '';
+      const away = g.away_team || g.away || g.awayTeam || '';
+      const comp = g.competition || g.league || '';
+      return `<div class="chip" onclick="document.getElementById('initialMessage').value='Rodar V26 em ${home} x ${away} pela ${comp}';">${home} x ${away} · ${comp}</div>`;
+    }).join('');
+  } catch (err) {
+    $('agendaBox').innerHTML = 'Agenda indisponível. Use a mensagem inicial.';
   }
-}
-$('ocrBtn').addEventListener('click', runOcr);
-$('useOcrBtn').addEventListener('click', () => {
-  $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), $('ocrText').value.trim()].filter(Boolean).join('\n'));
 });
 
-request('/health').then(h => setStatus('ok', h.version || 'V26 pronto')).catch(() => setStatus('bad', 'Backend offline'));
+request('/health').then(h => setStatus('ok', h.version || 'V26 pronto')).catch(()=>setStatus('bad','Backend offline'));
 </script>
 </body>
 </html>
