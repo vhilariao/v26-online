@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v2.2</title>
+  <title>V26 Web v2.2.1</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -249,7 +249,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v2.2</h1>
+          <h1>V26 Web v2.2.1</h1>
           <div class="subtitle">Dashboard + Odds Multi-Provider + Contexto IA + V26 Core</div>
         </div>
       </div>
@@ -379,8 +379,8 @@
             </div>
           </div>
           <div class="actions">
-            <button id="oddsIoMatchBtn" class="good">Buscar Odds-API.io</button>
-            <button id="oddsIoEventsBtn">Eventos Odds-API.io</button>
+            <button id="oddsIoMatchBtn" class="good">Buscar Odds-API.io por data</button>
+            <button id="oddsIoEventsBtn">Eventos Odds-API.io da data</button>
             <button id="oddsIoSportsBtn">Sports Odds-API.io</button>
           </div>
           <div id="oddsInfo" class="muted small">Odds automáticas são referência. Agora o campo de odds recebe só linhas limpas; relatório fica abaixo. HT pode exigir Pinnacle manual.</div>
@@ -425,7 +425,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v2.2: The Odds API continua base; Odds-API.io entra como fallback para tentar mercados mais amplos. Parser recebe só odds limpas. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v2.2.1: Odds-API.io usa a data do Dashboard para filtrar eventos antes de buscar odds. Parser recebe só odds limpas. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -441,7 +441,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v2.2 — Odds multi-provider. V26 decide.</div>
+    <div class="footer-note">V26 Web v2.2.1 — Odds-API.io por data. V26 decide.</div>
   </main>
 
   <script>
@@ -956,7 +956,7 @@
         return;
       }
       if (data.status !== 'ok') {
-        box.innerHTML = '<div class="info-box">Odds-API.io não encontrou odds para esse jogo. Tente sem liga ou ajuste bookmakers.</div>';
+        box.innerHTML = '<div class="info-box">Odds-API.io não encontrou odds para esse jogo na data selecionada. Tente sem liga, outra data ou ajuste bookmakers.</div>';
         info.innerHTML = `<div class="warn">${warnings}</div>`;
         return;
       }
@@ -1035,6 +1035,7 @@
           sport: 'football',
           league: ($('oddsIoLeague') && $('oddsIoLeague').value.trim()) || '',
           bookmakers: ($('oddsIoBookmakers') && $('oddsIoBookmakers').value.trim()) || 'Bet365,Unibet,SingBet',
+          date: ($('agendaDate') && $('agendaDate').value) || '',
           limit: '100'
         });
         const data = await request(`/odds-io/match?${qs.toString()}`);
@@ -1054,12 +1055,13 @@
         const qs = new URLSearchParams({
           sport: 'football',
           league: ($('oddsIoLeague') && $('oddsIoLeague').value.trim()) || '',
+          date: ($('agendaDate') && $('agendaDate').value) || '',
           limit: '100'
         });
         const data = await request(`/odds-io/events?${qs.toString()}`);
         renderOddsIoEvents(data);
         const quota = (data.metadata || {}).rate_limit_remaining ? ` Limite restante: ${(data.metadata || {}).rate_limit_remaining}.` : '';
-        $('oddsInfo').innerHTML = `<div class="success">Eventos Odds-API.io: ${(data.events || []).length}.${quota}</div>`;
+        $('oddsInfo').innerHTML = `<div class="success">Eventos Odds-API.io da data: ${(data.events || []).length}.${quota}</div>`;
       } catch (err) {
         $('oddsInfo').innerHTML = `<div class="error">Erro eventos Odds-API.io: ${err.message || err}</div>`;
       } finally {
