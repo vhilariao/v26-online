@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.6</title>
+  <title>V26 Web v3.9.8</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -69,8 +69,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.6</h1>
-      <div class="sub">Dashboard limpo: agenda do dia → Vision → Core V26</div>
+      <h1>V26 Web v3.9.8</h1>
+      <div class="sub">Dashboard limpo: asiático real → Core V26</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -131,9 +131,14 @@
   <section>
     <h2>2. Prints da Pinnacle — IA Vision + OCR</h2>
     <div class="hint">
-      Fluxo recomendado: envie prints necessários. A IA Vision entende blocos/colunas/período/time/linha/odd. Para evitar timeout, o app processa uma foto por vez e usa imagem reduzida.
+      Fluxo recomendado: envie prints necessários. A IA Vision entende blocos/colunas/período/time/linha/odd. O leitor Pinnacle processa uma foto por vez. No modo Core gols, ignora cartões/escanteios para acelerar e reduzir sujeira.
       Depois revise as odds limpas antes de rodar.
     </div>
+    <label>Modo de leitura Pinnacle</label>
+    <select id="marketScope">
+      <option value="core_goals" selected>Core gols — ignorar cartões/escanteios</option>
+      <option value="all">Todos os mercados visíveis</option>
+    </select>
     <label>Fotos/prints da Pinnacle</label>
     <input id="pinnacleImages" type="file" accept="image/*" multiple />
     <div class="actions">
@@ -363,6 +368,7 @@ $('visionBtn').addEventListener('click', async () => {
         method:'POST',
         body:JSON.stringify({
           initial_message:$('initialMessage').value,
+          market_scope:$('marketScope').value,
           ocr_text:'',
           images
         })
