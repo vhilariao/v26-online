@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.9</title>
+  <title>V26 Web v1.9.1</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -228,7 +228,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.9</h1>
+          <h1>V26 Web v1.9.1</h1>
           <div class="subtitle">Agenda de Jogos + Contexto IA + V26 Core</div>
         </div>
       </div>
@@ -259,6 +259,27 @@
           <button data-sample="avai">Athletic x Avaí</button>
         </div>
         <p class="muted small">Use para validar se a API está respondendo igual aos casos oficiais da V26.</p>
+      </section>
+    </div>
+
+    <div class="grid" style="margin-top:16px;">
+      <section class="card">
+        <h2>0. Agenda de jogos</h2>
+        <div class="grid two">
+          <div>
+            <label for="agendaDate">Data</label>
+            <input id="agendaDate" type="date" />
+          </div>
+          <div>
+            <label for="agendaCompetition">Competição opcional</label>
+            <input id="agendaCompetition" placeholder="Ex: BSA, PL, CL, BL1..." />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="agendaBtn" class="good">Carregar jogos do dia</button>
+        </div>
+        <div id="agendaInfo" class="muted small">Use a agenda para selecionar jogo sem digitar os times.</div>
+        <div id="agendaBox" class="agenda-grid"></div>
       </section>
     </div>
 
@@ -342,7 +363,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v1.9 — Agenda de jogos. Selecione o jogo antes da IA/V26.</div>
+    <div class="footer-note">V26 Web v1.9.1 — Agenda corrigida. Selecione o jogo antes da IA/V26.</div>
   </main>
 
   <script>
