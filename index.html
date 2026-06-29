@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.9.1</title>
+  <title>V26 Web v1.9.2</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -228,7 +228,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.9.1</h1>
+          <h1>V26 Web v1.9.2</h1>
           <div class="subtitle">Agenda de Jogos + Contexto IA + V26 Core</div>
         </div>
       </div>
@@ -277,6 +277,7 @@
         </div>
         <div class="actions">
           <button id="agendaBtn" class="good">Carregar jogos do dia</button>
+          <button id="competitionsBtn">Ver competições</button>
         </div>
         <div id="agendaInfo" class="muted small">Use a agenda para selecionar jogo sem digitar os times.</div>
         <div id="agendaBox" class="agenda-grid"></div>
@@ -363,7 +364,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v1.9.1 — Agenda corrigida. Selecione o jogo antes da IA/V26.</div>
+    <div class="footer-note">V26 Web v1.9.2 — Agenda corrigida. Busca do dia ajustada no backend.</div>
   </main>
 
   <script>
@@ -606,6 +607,53 @@
         btn.addEventListener('click', () => selectAgendaMatch(matches[Number(btn.dataset.matchIdx)]));
       });
     }
+
+
+    function renderCompetitions(data) {
+      const comps = data.competitions || [];
+      if (!comps.length) {
+        $('agendaBox').innerHTML = '<div class="info-box">Nenhuma competição retornada pelo token.</div>';
+        return;
+      }
+      $('agendaBox').innerHTML = comps.map(c => `
+        <div class="match-card">
+          <b>${c.name} ${c.code ? '(' + c.code + ')' : ''}</b>
+          <span>${c.area_name || ''} · ${c.type || ''}</span>
+          <button data-comp-code="${c.code || c.id}">Usar esta competição</button>
+        </div>
+      `).join('');
+      [...document.querySelectorAll('[data-comp-code]')].forEach(btn => {
+        btn.addEventListener('click', () => {
+          $('agendaCompetition').value = btn.dataset.compCode || '';
+          $('agendaInfo').innerHTML = '<div class="success">Competição preenchida. Agora carregue os jogos do dia.</div>';
+        });
+      });
+    }
+
+    if ($('competitionsBtn')) $('competitionsBtn').addEventListener('click', async () => {
+      const info = $('agendaInfo');
+      const btn = $('competitionsBtn');
+      btn.disabled = true;
+      info.innerHTML = '<span class="muted">Carregando competições...</span>';
+      try {
+        const data = await request('/agenda/competitions');
+        renderCompetitions(data);
+        const warningText = (data.warnings || []).length ? `<br><span class="small">${data.warnings.join(' ')}</span>` : '';
+        if (data.status === 'ok') {
+          info.innerHTML = `<div class="success">Competições carregadas: ${(data.competitions || []).length}.${warningText}</div>`;
+          setStatus('ok', 'Competições ok');
+        } else {
+          info.innerHTML = `<div class="warn">Não foi possível carregar competições.${warningText}</div>`;
+          setStatus('warn', 'Competições pendentes');
+        }
+      } catch (err) {
+        info.innerHTML = `<div class="error">Erro ao carregar competições: ${err.message || err}</div>`;
+        setStatus('err', 'Erro competições');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
 
     if ($('agendaBtn')) $('agendaBtn').addEventListener('click', async () => {
       const info = $('agendaInfo');
