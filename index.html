@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v2.6.1</title>
+  <title>V26 Web v2.8</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -242,6 +242,7 @@
       .status { display: inline-flex; margin-top: 8px; }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
   <header>
@@ -249,7 +250,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v2.6.1</h1>
+          <h1>V26 Web v2.8</h1>
           <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
         </div>
       </div>
@@ -372,8 +373,37 @@
           <div id="oddsBox"></div>
         </section>
 
+        <section class="subcard">
+          <h2>Foto das odds Pinnacle</h2>
+          <div class="muted small">
+            Envie um print/foto da tela da Pinnacle. O OCR tenta extrair os mercados e joga uma sugestão para revisão.
+            Confirme sempre mercado, linha e odd antes de rodar IA + V26.
+          </div>
+          <div class="grid two">
+            <div>
+              <label for="pinnacleImage">Print/foto das odds</label>
+              <input id="pinnacleImage" type="file" accept="image/*" />
+            </div>
+            <div>
+              <label for="ocrMode">Modo OCR</label>
+              <select id="ocrMode">
+                <option value="pinnacle">Pinnacle / odds</option>
+                <option value="raw">Texto bruto</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="ocrBtn" class="good">Ler foto das odds</button>
+            <button id="ocrUseBtn">Usar OCR no campo odds</button>
+            <button id="ocrAppendBtn">Adicionar OCR às odds</button>
+          </div>
+          <div id="ocrInfo" class="muted small">OCR local no navegador. Em foto ruim, revise manualmente.</div>
+          <label for="ocrText">Texto OCR / odds sugeridas</label>
+          <textarea id="ocrText" placeholder="O texto extraído da foto aparecerá aqui para você revisar."></textarea>
+        </section>
+
         <label for="oddsText">Odds para V26 — limpar/revisar antes de rodar</label>
-        <textarea id="oddsText" placeholder="Cole aqui as odds..."></textarea>
+        <textarea id="oddsText" placeholder="Cole aqui as odds ou use a foto acima..."></textarea>
         <label for="contextText">Contexto manual / leitura mestre</label>
         <textarea id="contextText" placeholder="Cole ou escreva aqui a leitura principal: motivação, favorito/azarão, forma, mando/fora, desfalques, ataque/defesa, ritmo, mercado e risco. Este campo prevalece sobre dados automáticos."></textarea>
 
@@ -411,10 +441,11 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v2.6.1: hotfix do Contexto IA. Odds são mercado/dinheiro; contexto serve para achar vantagem contra a probabilidade implícita; IA levanta hipóteses, Core decide classe/stake. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v2.8: você pode escrever odds ou enviar print/foto da Pinnacle. O OCR sugere linhas, você valida e roda IA + V26. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
+          <button id="iaV26Btn" class="primary">Rodar IA + V26</button>
           <button id="analyzeBtn" class="primary">Rodar V26 Core</button>
           <button id="parseBtn">Testar parser</button>
           <button id="clearBtn">Limpar</button>
@@ -427,7 +458,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v2.6.1 — IA com Doutrina V26 corrigida. V26 decide.</div>
+    <div class="footer-note">V26 Web v2.8 — IA + V26 Core + Foto Pinnacle. V26 decide.</div>
   </main>
 
   <script>
@@ -485,6 +516,160 @@
       }
       return res.json();
     }
+
+    function normalizeOcrOdds(raw) {
+      const text = (raw || '')
+        .replace(/[|]/g, ' ')
+        .replace(/[“”]/g, '"')
+        .replace(/[−–—]/g, '-')
+        .replace(/(\d),(\d{3})/g, '$1.$2')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const lines = (raw || '').split(/\n+/).map(x => x.trim()).filter(Boolean);
+      const out = [];
+      let currentMarket = '';
+
+      function cleanOdd(s) {
+        return String(s || '').replace(',', '.').replace(/[^\d.]/g, '');
+      }
+
+      function push(market, selection, line, odd, source='Pinnacle') {
+        const o = cleanOdd(odd);
+        if (!o || Number(o) < 1.01 || Number(o) > 1000) return;
+        const lineTxt = line ? ` ${line}` : '';
+        out.push(`${market} ${selection}${lineTxt} @${o} [${source}]`);
+      }
+
+      for (const rawLine of lines) {
+        const l = rawLine.replace(/\s+/g, ' ').trim();
+        const n = l.toLowerCase();
+
+        if (/acima\/abaixo|total.*gols|total da equipe|escanteios|cartões|cartoes|handicap|1x2|moneyline|classificar|ambas|empate anula|1º tempo|1 tempo/.test(n)) {
+          currentMarket = l;
+        }
+
+        // BTTS: Sim 2.000 / Não 1.854
+        if (/ambas/.test(n) || /sim\s+\d/.test(n) || /não\s+\d|nao\s+\d/.test(n)) {
+          const yes = l.match(/\b(sim|yes)\b\s*(\d+[.,]\d{2,3})/i);
+          const no = l.match(/\b(n[aã]o|no)\b\s*(\d+[.,]\d{2,3})/i);
+          if (yes) push('Ambas marcam', 'Sim', '', yes[2]);
+          if (no) push('Ambas marcam', 'Não', '', no[2]);
+        }
+
+        // Over/Under: o 2.5 2.120 / u 2.5 1.769
+        const ouMatches = [...l.matchAll(/\b([ou])\s*(-?\d+(?:[.,]\d+)?)\s+(\d+[.,]\d{2,3})/gi)];
+        for (const m of ouMatches) {
+          const side = m[1].toLowerCase() === 'o' ? 'Over' : 'Under';
+          const line = m[2].replace(',', '.');
+          const odd = m[3];
+          let market = 'Total gols';
+          const cm = currentMarket.toLowerCase();
+          if (/escanteio/.test(cm)) market = 'Escanteios';
+          if (/cart/.test(cm)) market = 'Cartões';
+          if (/1.?º tempo|1 tempo/.test(cm)) market = `${market} HT`;
+          if (/total da equipe/.test(cm)) {
+            const team = /brasil/i.test(currentMarket) ? 'Brasil' : (/jap[aã]o/i.test(currentMarket) ? 'Japão' : '');
+            market = `${team} Total da equipe`.trim();
+            if (/1.?º tempo|1 tempo/.test(cm)) market += ' HT';
+          }
+          push(market, side, line, odd);
+        }
+
+        // Handicap: Brasil -0.75 1.917 / Japão +0.75 1.990
+        const hMatches = [...l.matchAll(/\b(Brasil|Jap[aã]o)?\s*([+-]\d+(?:[.,]\d+)?|0)\s+(\d+[.,]\d{2,3})/gi)];
+        if (/handicap/.test(n) || /handicap/.test(currentMarket.toLowerCase())) {
+          for (const m of hMatches) {
+            const team = m[1] || '';
+            const line = m[2].replace(',', '.');
+            const odd = m[3];
+            if (team) push('Handicap', team, line, odd);
+          }
+        }
+
+        // 1x2 / Moneyline: 1 1.689 x 3.840 2 5.420
+        if (/1x2|moneyline|classificar/.test(currentMarket.toLowerCase()) || /\b1\s+\d+[.,]\d{2,3}/.test(l)) {
+          const ml1 = l.match(/\b1\s+(\d+[.,]\d{2,3})/i);
+          const mlx = l.match(/\bx\s+(\d+[.,]\d{2,3})/i);
+          const ml2 = l.match(/\b2\s+(\d+[.,]\d{2,3})/i);
+          if (ml1) push('Resultado', 'Brasil ML', '', ml1[1]);
+          if (mlx) push('Resultado', 'Empate ML', '', mlx[1]);
+          if (ml2) push('Resultado', 'Japão ML', '', ml2[1]);
+
+          const classify = l.match(/\b(Brasil|Jap[aã]o)\s+(\d+[.,]\d{2,3})/i);
+          if (/classificar/.test(currentMarket.toLowerCase()) && classify) {
+            push('Classificar', classify[1], '', classify[2]);
+          }
+        }
+      }
+
+      // Dedup
+      const seen = new Set();
+      const clean = [];
+      for (const line of out) {
+        const key = line.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          clean.push(line);
+        }
+      }
+
+      if (clean.length) {
+        return clean.join('\n');
+      }
+
+      // Fallback: devolve OCR bruto se não conseguiu estruturar.
+      return raw || '';
+    }
+
+    async function runPinnacleOcr() {
+      const input = $('pinnacleImage');
+      const file = input && input.files && input.files[0];
+      if (!file) {
+        $('ocrInfo').innerHTML = '<div class="warn">Selecione uma foto/print primeiro.</div>';
+        return;
+      }
+      if (!window.Tesseract) {
+        $('ocrInfo').innerHTML = '<div class="error">Biblioteca OCR não carregou. Verifique internet/cache e tente atualizar.</div>';
+        return;
+      }
+      const btn = $('ocrBtn');
+      btn.disabled = true;
+      $('ocrInfo').innerHTML = '<span class="muted">Lendo imagem... pode demorar alguns segundos no celular.</span>';
+      try {
+        const result = await Tesseract.recognize(file, 'eng+por', {
+          logger: m => {
+            if (m && m.status) {
+              const pct = m.progress ? ` ${Math.round(m.progress * 100)}%` : '';
+              $('ocrInfo').innerHTML = `<span class="muted">OCR: ${m.status}${pct}</span>`;
+            }
+          }
+        });
+        const raw = result && result.data ? result.data.text : '';
+        const mode = $('ocrMode') ? $('ocrMode').value : 'pinnacle';
+        const text = mode === 'raw' ? raw : normalizeOcrOdds(raw);
+        $('ocrText').value = text;
+        $('ocrInfo').innerHTML = '<div class="success">OCR concluído. Revise as linhas antes de usar no V26.</div>';
+      } catch (err) {
+        $('ocrInfo').innerHTML = `<div class="error">Erro no OCR: ${err.message || err}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    if ($('ocrBtn')) $('ocrBtn').addEventListener('click', runPinnacleOcr);
+    if ($('ocrUseBtn')) $('ocrUseBtn').addEventListener('click', () => {
+      $('oddsText').value = $('ocrText').value || '';
+      $('ocrInfo').innerHTML = '<div class="success">Texto OCR enviado para o campo odds.</div>';
+    });
+    if ($('ocrAppendBtn')) $('ocrAppendBtn').addEventListener('click', () => {
+      const current = $('oddsText').value.trim();
+      const add = $('ocrText').value.trim();
+      $('oddsText').value = [current, add].filter(Boolean).join('\n');
+      $('ocrInfo').innerHTML = '<div class="success">Texto OCR adicionado às odds.</div>';
+    });
+
+
     function payload() {
       return {
         home_team: $('homeTeam').value.trim(),
@@ -1379,6 +1564,93 @@
       try { const data = await request('/parse', { method: 'POST', body: JSON.stringify({ odds_text: $('oddsText').value }) }); setStatus('ok', 'Parser ok'); renderParse(data); }
       catch (err) { renderError(err); }
     });
+
+    function renderIaV26Result(data) {
+      const s = data.strategy || {};
+      const core = data.core || {};
+      const decision = s.decision || {};
+      const marketFirst = s.market_first || {};
+      const contextVs = s.context_vs_price || {};
+      const hyps = (s.advantage_hypotheses || {}).items || [];
+      const coreDecision = s.core_decision || {};
+      const candidates = coreDecision.candidates || [];
+      const rejected = coreDecision.rejected || [];
+
+      const candidatesHtml = candidates.length ? candidates.map(c => `
+        <div class="scan-link">
+          <b>${c.market}</b>
+          <span>Odd ${Number(c.odd).toFixed(3)} · Classe ${c.class} · EV ${Number(c.ev).toFixed(1)}% · Stake ${c.stake}</span>
+          ${(c.reasons || []).map(r => `<span>${r}</span>`).join('')}
+        </div>
+      `).join('') : '<div class="info-box">Nenhum candidato com stake liberado.</div>';
+
+      const rejectedHtml = rejected.length ? rejected.slice(0,6).map(c => `
+        <div class="scan-link">
+          <b>${c.market}</b>
+          <span>Odd ${Number(c.odd).toFixed(3)} · Classe ${c.class} · EV ${Number(c.ev).toFixed(1)}% · Stake ${c.stake}</span>
+        </div>
+      `).join('') : '';
+
+      const findingsHtml = (contextVs.what_ia_found || []).slice(0,8).map(x => `<li>${x}</li>`).join('');
+      const hypsHtml = hyps.slice(0,8).map(x => `<li>${x}</li>`).join('');
+
+      $('resultBox').innerHTML = `
+        <div class="${decision.decision === 'NO_BET' ? 'warn' : 'success'}" style="margin-bottom:12px;">
+          <b>${decision.label || data.decision_label || 'IA + V26'}</b><br>
+          ${s.operational_decision || data.operational_alert || ''}
+        </div>
+
+        <div class="result-hero">
+          <div class="pill">${s.match || ''} · IA + V26</div>
+          <p class="market">${s.headline || ''}</p>
+          <div class="muted">${decision.reason || ''}</div>
+        </div>
+
+        <h2>1. Mercado primeiro</h2>
+        <div class="info-box"><b>${marketFirst.title || 'Mercado primeiro'}</b><br>${marketFirst.reading || ''}<br><br>${marketFirst.doctrine || ''}</div>
+
+        <h2>2. Contexto contra a odd</h2>
+        <div class="info-box">${contextVs.reading || ''}</div>
+        ${findingsHtml ? `<ul>${findingsHtml}</ul>` : ''}
+
+        <h2>3. Hipóteses de vantagem</h2>
+        <div class="info-box"><ul>${hypsHtml || '<li>Sem hipóteses geradas.</li>'}</ul></div>
+
+        <h2>4. Decisão do V26 Core</h2>
+        <p class="muted">${coreDecision.narrative || ''}</p>
+        ${candidatesHtml}
+
+        ${rejectedHtml ? `<h2>Mercados rejeitados / bloqueados</h2>${rejectedHtml}` : ''}
+
+        <h2>Ranking completo do Core</h2>
+      `;
+
+      // Acrescenta o ranking padrão abaixo.
+      const old = $('resultBox').innerHTML;
+      renderResult(core);
+      $('resultBox').innerHTML = old + $('resultBox').innerHTML;
+      setStatus(data.decision === 'NO_BET' ? 'warn' : 'ok', 'IA + V26 pronto');
+    }
+
+    if ($('iaV26Btn')) $('iaV26Btn').addEventListener('click', async () => {
+      const btn = $('iaV26Btn');
+      btn.disabled = true;
+      setStatus('warn', 'Rodando IA + V26');
+      $('resultBox').innerHTML = '<span class="muted">IA lendo odds, buscando contexto e enviando ao V26 Core...</span>';
+      try {
+        const data = await request('/analyze/ia-v26', { method: 'POST', body: JSON.stringify(payload()) });
+        renderIaV26Result(data);
+        if (data.context_ia && $('finalContextText')) {
+          $('finalContextText').value = data.context_ia.context_master || $('finalContextText').value;
+        }
+      } catch (err) {
+        renderError(err);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+
     $('analyzeBtn').addEventListener('click', async () => {
       try {
         $('resultBox').innerHTML = '<span class="muted">Rodando V26 Core...</span>';
