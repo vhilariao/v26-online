@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.4.1</title>
+  <title>V26 Web v3.9.5</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -62,8 +62,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.4.1</h1>
-      <div class="sub">Dashboard limpo: ranking saneado → Core V26 completo</div>
+      <h1>V26 Web v3.9.5</h1>
+      <div class="sub">Dashboard limpo: Vision 1 por vez → Core V26 completo</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -111,7 +111,7 @@
   <section>
     <h2>2. Prints da Pinnacle — IA Vision + OCR</h2>
     <div class="hint">
-      Fluxo recomendado: envie prints necessários. A IA Vision entende blocos/colunas/período/time/linha/odd. Para evitar timeout, o app processa em lotes pequenos.
+      Fluxo recomendado: envie prints necessários. A IA Vision entende blocos/colunas/período/time/linha/odd. Para evitar timeout, o app processa uma foto por vez e usa imagem reduzida.
       Depois revise as odds limpas antes de rodar.
     </div>
     <label>Fotos/prints da Pinnacle</label>
@@ -279,7 +279,7 @@ $('brazilTtHtBtn').addEventListener('click', () => {
   $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), 'Brasil Total da Equipe HT Over 0.5 @1.740 [Pinnacle]'].filter(Boolean).join('\n'));
 });
 
-async function fileToCompressedDataUrl(file, maxSide=950, quality=.66) {
+async function fileToCompressedDataUrl(file, maxSide=700, quality=.52) {
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
@@ -329,7 +329,7 @@ $('visionBtn').addEventListener('click', async () => {
   setStatus('', 'IA Vision lendo prints');
   try {
     // v3.9.1: não roda OCR local antes da Vision. OCR no iPhone com muitas fotos é a principal causa de lentidão.
-    const batches = chunkArray(files, 3);
+    const batches = chunkArray(files, 1);
     const allClean = [];
     const allWarnings = [];
     let confSum = 0, confN = 0;
@@ -375,10 +375,10 @@ $('visionBtn').addEventListener('click', async () => {
     $('oddsText').value = frontendCleanOddsText([$('oddsText').value.trim(), ...allClean].filter(Boolean).join('\n'));
     const conf = confN ? Math.round((confSum / confN) * 100) : 0;
     const warn = allWarnings.length ? ' Avisos: ' + [...new Set(allWarnings)].join(' | ') : '';
-    $('visionInfo').innerHTML = `<span class="success">IA Vision concluiu em ${batches.length} lote(s). Confiança média: ${conf}%.</span>${warn}`;
+    $('visionInfo').innerHTML = `<span class="success">IA Vision concluiu ${files.length} foto(s), uma por vez. Confiança média: ${conf}%.</span>${warn}`;
     setStatus('ok','Odds preparadas');
   } catch (err) {
-    $('visionInfo').innerHTML = `<span class="error">Erro: ${err.message}. Tente 3 fotos por vez ou use OCR/manual.</span>`;
+    $('visionInfo').innerHTML = `<span class="error">Erro: ${err.message}. Tente 1 foto por vez ou use OCR/manual.</span>`;
     setStatus('bad','Erro IA Vision');
   } finally { $('visionBtn').disabled = false; }
 });
