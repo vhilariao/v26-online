@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v2.8</title>
+  <title>V26 Web v3.0</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -250,7 +250,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v2.8</h1>
+          <h1>V26 Web v3.0</h1>
           <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
         </div>
       </div>
@@ -376,13 +376,13 @@
         <section class="subcard">
           <h2>Foto das odds Pinnacle</h2>
           <div class="muted small">
-            Envie um print/foto da tela da Pinnacle. O OCR tenta extrair os mercados e joga uma sugestão para revisão.
+            Envie um ou vários prints/fotos da tela da Pinnacle. O OCR tenta extrair os mercados e joga uma sugestão para revisão.
             Confirme sempre mercado, linha e odd antes de rodar IA + V26.
           </div>
           <div class="grid two">
             <div>
-              <label for="pinnacleImage">Print/foto das odds</label>
-              <input id="pinnacleImage" type="file" accept="image/*" />
+              <label for="pinnacleImage">Prints/fotos das odds</label>
+              <input id="pinnacleImage" type="file" accept="image/*" multiple />
             </div>
             <div>
               <label for="ocrMode">Modo OCR</label>
@@ -441,7 +441,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v2.8: você pode escrever odds ou enviar print/foto da Pinnacle. O OCR sugere linhas, você valida e roda IA + V26. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v3.0: Core puro ranqueia matematicamente; IA + V26 seleciona o mercado que melhor encaixa odds + contexto + Core. Compare os dois resultados. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -458,7 +458,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v2.8 — IA + V26 Core + Foto Pinnacle. V26 decide.</div>
+    <div class="footer-note">V26 Web v3.0 — IA seleciona mercado + Core valida. V26 decide.</div>
   </main>
 
   <script>
@@ -517,18 +517,26 @@
       return res.json();
     }
 
-    function normalizeOcrOdds(raw) {
-      const text = (raw || '')
-        .replace(/[|]/g, ' ')
-        .replace(/[“”]/g, '"')
-        .replace(/[−–—]/g, '-')
-        .replace(/(\d),(\d{3})/g, '$1.$2')
-        .replace(/\s+/g, ' ')
-        .trim();
+    function dedupeLines(text) {
+      const seen = new Set();
+      const out = [];
+      for (const raw of String(text || '').split(/\n+/)) {
+        const line = raw.trim();
+        if (!line) continue;
+        const key = line.toLowerCase().replace(/\s+/g, ' ');
+        if (!seen.has(key)) {
+          seen.add(key);
+          out.push(line);
+        }
+      }
+      return out.join('\n');
+    }
 
+    function normalizeOcrOdds(raw) {
       const lines = (raw || '').split(/\n+/).map(x => x.trim()).filter(Boolean);
       const out = [];
       let currentMarket = '';
+      let currentTeam = '';
 
       function cleanOdd(s) {
         return String(s || '').replace(',', '.').replace(/[^\d.]/g, '');
@@ -542,20 +550,21 @@
       }
 
       for (const rawLine of lines) {
-        const l = rawLine.replace(/\s+/g, ' ').trim();
+        const l = rawLine.replace(/[|]/g, ' ').replace(/[−–—]/g, '-').replace(/\s+/g, ' ').trim();
         const n = l.toLowerCase();
+
+        if (/brasil/.test(n)) currentTeam = 'Brasil';
+        if (/jap[aã]o/.test(n)) currentTeam = 'Japão';
 
         if (/acima\/abaixo|total.*gols|total da equipe|escanteios|cartões|cartoes|handicap|1x2|moneyline|classificar|ambas|empate anula|1º tempo|1 tempo/.test(n)) {
           currentMarket = l;
         }
 
-        // BTTS: Sim 2.000 / Não 1.854
-        if (/ambas/.test(n) || /sim\s+\d/.test(n) || /não\s+\d|nao\s+\d/.test(n)) {
-          const yes = l.match(/\b(sim|yes)\b\s*(\d+[.,]\d{2,3})/i);
-          const no = l.match(/\b(n[aã]o|no)\b\s*(\d+[.,]\d{2,3})/i);
-          if (yes) push('Ambas marcam', 'Sim', '', yes[2]);
-          if (no) push('Ambas marcam', 'Não', '', no[2]);
-        }
+        // BTTS
+        const yes = l.match(/\b(sim|yes)\b\s*(\d+[.,]\d{2,3})/i);
+        const no = l.match(/\b(n[aã]o|no)\b\s*(\d+[.,]\d{2,3})/i);
+        if (yes) push('Ambas marcam', 'Sim', '', yes[2]);
+        if (no) push('Ambas marcam', 'Não', '', no[2]);
 
         // Over/Under: o 2.5 2.120 / u 2.5 1.769
         const ouMatches = [...l.matchAll(/\b([ou])\s*(-?\d+(?:[.,]\d+)?)\s+(\d+[.,]\d{2,3})/gi)];
@@ -569,25 +578,25 @@
           if (/cart/.test(cm)) market = 'Cartões';
           if (/1.?º tempo|1 tempo/.test(cm)) market = `${market} HT`;
           if (/total da equipe/.test(cm)) {
-            const team = /brasil/i.test(currentMarket) ? 'Brasil' : (/jap[aã]o/i.test(currentMarket) ? 'Japão' : '');
+            const team = /brasil/i.test(currentMarket) ? 'Brasil' : (/jap[aã]o/i.test(currentMarket) ? 'Japão' : currentTeam);
             market = `${team} Total da equipe`.trim();
             if (/1.?º tempo|1 tempo/.test(cm)) market += ' HT';
           }
           push(market, side, line, odd);
         }
 
-        // Handicap: Brasil -0.75 1.917 / Japão +0.75 1.990
-        const hMatches = [...l.matchAll(/\b(Brasil|Jap[aã]o)?\s*([+-]\d+(?:[.,]\d+)?|0)\s+(\d+[.,]\d{2,3})/gi)];
+        // Handicap with team context.
         if (/handicap/.test(n) || /handicap/.test(currentMarket.toLowerCase())) {
+          const hMatches = [...l.matchAll(/\b(Brasil|Jap[aã]o)?\s*([+-]\d+(?:[.,]\d+)?|0)\s+(\d+[.,]\d{2,3})/gi)];
           for (const m of hMatches) {
-            const team = m[1] || '';
+            const team = m[1] || currentTeam || '';
             const line = m[2].replace(',', '.');
             const odd = m[3];
             if (team) push('Handicap', team, line, odd);
           }
         }
 
-        // 1x2 / Moneyline: 1 1.689 x 3.840 2 5.420
+        // 1x2 / ML
         if (/1x2|moneyline|classificar/.test(currentMarket.toLowerCase()) || /\b1\s+\d+[.,]\d{2,3}/.test(l)) {
           const ml1 = l.match(/\b1\s+(\d+[.,]\d{2,3})/i);
           const mlx = l.match(/\bx\s+(\d+[.,]\d{2,3})/i);
@@ -595,38 +604,24 @@
           if (ml1) push('Resultado', 'Brasil ML', '', ml1[1]);
           if (mlx) push('Resultado', 'Empate ML', '', mlx[1]);
           if (ml2) push('Resultado', 'Japão ML', '', ml2[1]);
+        }
 
-          const classify = l.match(/\b(Brasil|Jap[aã]o)\s+(\d+[.,]\d{2,3})/i);
-          if (/classificar/.test(currentMarket.toLowerCase()) && classify) {
-            push('Classificar', classify[1], '', classify[2]);
-          }
+        // Classificar two-column rows: Brasil 1.325 / Japão 3.640
+        if (/classificar/.test(currentMarket.toLowerCase())) {
+          const teams = [...l.matchAll(/\b(Brasil|Jap[aã]o)\s+(\d+[.,]\d{2,3})/gi)];
+          for (const t of teams) push('Classificar', t[1], '', t[2]);
         }
       }
 
-      // Dedup
-      const seen = new Set();
-      const clean = [];
-      for (const line of out) {
-        const key = line.toLowerCase();
-        if (!seen.has(key)) {
-          seen.add(key);
-          clean.push(line);
-        }
-      }
-
-      if (clean.length) {
-        return clean.join('\n');
-      }
-
-      // Fallback: devolve OCR bruto se não conseguiu estruturar.
-      return raw || '';
+      const clean = dedupeLines(out.join('\n'));
+      return clean || raw || '';
     }
 
     async function runPinnacleOcr() {
       const input = $('pinnacleImage');
-      const file = input && input.files && input.files[0];
-      if (!file) {
-        $('ocrInfo').innerHTML = '<div class="warn">Selecione uma foto/print primeiro.</div>';
+      const files = input && input.files ? Array.from(input.files) : [];
+      if (!files.length) {
+        $('ocrInfo').innerHTML = '<div class="warn">Selecione uma ou mais fotos/prints primeiro.</div>';
         return;
       }
       if (!window.Tesseract) {
@@ -635,21 +630,30 @@
       }
       const btn = $('ocrBtn');
       btn.disabled = true;
-      $('ocrInfo').innerHTML = '<span class="muted">Lendo imagem... pode demorar alguns segundos no celular.</span>';
+      $('ocrInfo').innerHTML = `<span class="muted">Lendo ${files.length} imagem(ns)...</span>`;
       try {
-        const result = await Tesseract.recognize(file, 'eng+por', {
-          logger: m => {
-            if (m && m.status) {
-              const pct = m.progress ? ` ${Math.round(m.progress * 100)}%` : '';
-              $('ocrInfo').innerHTML = `<span class="muted">OCR: ${m.status}${pct}</span>`;
+        const allRaw = [];
+        const allNormalized = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          $('ocrInfo').innerHTML = `<span class="muted">OCR imagem ${i + 1}/${files.length}...</span>`;
+          const result = await Tesseract.recognize(file, 'eng+por', {
+            logger: m => {
+              if (m && m.status) {
+                const pct = m.progress ? ` ${Math.round(m.progress * 100)}%` : '';
+                $('ocrInfo').innerHTML = `<span class="muted">Imagem ${i + 1}/${files.length}: ${m.status}${pct}</span>`;
+              }
             }
-          }
-        });
-        const raw = result && result.data ? result.data.text : '';
+          });
+          const raw = result && result.data ? result.data.text : '';
+          allRaw.push(`# FOTO ${i + 1}\n${raw}`);
+          allNormalized.push(normalizeOcrOdds(raw));
+        }
         const mode = $('ocrMode') ? $('ocrMode').value : 'pinnacle';
-        const text = mode === 'raw' ? raw : normalizeOcrOdds(raw);
+        const text = mode === 'raw' ? allRaw.join('\n\n') : dedupeLines(allNormalized.join('\n'));
         $('ocrText').value = text;
-        $('ocrInfo').innerHTML = '<div class="success">OCR concluído. Revise as linhas antes de usar no V26.</div>';
+        const count = text.split(/\n+/).filter(Boolean).length;
+        $('ocrInfo').innerHTML = `<div class="success">OCR concluído: ${files.length} foto(s), ${count} linha(s) sugerida(s). Revise antes de usar.</div>`;
       } catch (err) {
         $('ocrInfo').innerHTML = `<div class="error">Erro no OCR: ${err.message || err}</div>`;
       } finally {
@@ -659,14 +663,22 @@
 
     if ($('ocrBtn')) $('ocrBtn').addEventListener('click', runPinnacleOcr);
     if ($('ocrUseBtn')) $('ocrUseBtn').addEventListener('click', () => {
-      $('oddsText').value = $('ocrText').value || '';
+      $('oddsText').value = dedupeLines($('ocrText').value || '');
       $('ocrInfo').innerHTML = '<div class="success">Texto OCR enviado para o campo odds.</div>';
     });
     if ($('ocrAppendBtn')) $('ocrAppendBtn').addEventListener('click', () => {
       const current = $('oddsText').value.trim();
       const add = $('ocrText').value.trim();
-      $('oddsText').value = [current, add].filter(Boolean).join('\n');
+      $('oddsText').value = dedupeLines([current, add].filter(Boolean).join('\n'));
       $('ocrInfo').innerHTML = '<div class="success">Texto OCR adicionado às odds.</div>';
+    });
+
+    // Odds por API não é mais o fluxo principal. Oculta botões automáticos antigos se existirem.
+    window.addEventListener('load', () => {
+      ['oddsMatchBtn','oddsAdvancedBtn','oddsEventsBtn','oddsSportsBtn','oddsIoDashboardBtn','oddsIoMatchBtn','oddsIoEventsBtn','oddsIoSportsBtn'].forEach(id => {
+        const el = $(id);
+        if (el) el.style.display = 'none';
+      });
     });
 
 
@@ -1572,27 +1584,26 @@
       const marketFirst = s.market_first || {};
       const contextVs = s.context_vs_price || {};
       const hyps = (s.advantage_hypotheses || {}).items || [];
+      const iaSelection = s.ia_selection || {};
+      const iaRanking = iaSelection.ranking || [];
+      const corePure = s.core_pure_decision || {};
       const coreDecision = s.core_decision || {};
-      const candidates = coreDecision.candidates || [];
-      const rejected = coreDecision.rejected || [];
 
-      const candidatesHtml = candidates.length ? candidates.map(c => `
-        <div class="scan-link">
-          <b>${c.market}</b>
-          <span>Odd ${Number(c.odd).toFixed(3)} · Classe ${c.class} · EV ${Number(c.ev).toFixed(1)}% · Stake ${c.stake}</span>
-          ${(c.reasons || []).map(r => `<span>${r}</span>`).join('')}
-        </div>
-      `).join('') : '<div class="info-box">Nenhum candidato com stake liberado.</div>';
-
-      const rejectedHtml = rejected.length ? rejected.slice(0,6).map(c => `
-        <div class="scan-link">
-          <b>${c.market}</b>
-          <span>Odd ${Number(c.odd).toFixed(3)} · Classe ${c.class} · EV ${Number(c.ev).toFixed(1)}% · Stake ${c.stake}</span>
-        </div>
+      const iaRankingHtml = iaRanking.length ? iaRanking.slice(0,8).map((r, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${(r.market || {}).name || ''}</td>
+          <td>${Number((r.market || {}).odds || 0).toFixed(3)}</td>
+          <td>${r.classification || ''}</td>
+          <td>${Number(r.ev_percent || 0).toFixed(1)}%</td>
+          <td>${r.stake_units ? 'R$ ' + r.stake_units + ',00' : 'R$ 0,00'}</td>
+          <td>${(r.ia_alignment || {}).score ?? ''}</td>
+        </tr>
       `).join('') : '';
 
       const findingsHtml = (contextVs.what_ia_found || []).slice(0,8).map(x => `<li>${x}</li>`).join('');
       const hypsHtml = hyps.slice(0,8).map(x => `<li>${x}</li>`).join('');
+      const alignReasons = (((iaSelection.ia_best || {}).ia_alignment || {}).reasons || []).map(x => `<li>${x}</li>`).join('');
 
       $('resultBox').innerHTML = `
         <div class="${decision.decision === 'NO_BET' ? 'warn' : 'success'}" style="margin-bottom:12px;">
@@ -1613,22 +1624,34 @@
         <div class="info-box">${contextVs.reading || ''}</div>
         ${findingsHtml ? `<ul>${findingsHtml}</ul>` : ''}
 
-        <h2>3. Hipóteses de vantagem</h2>
+        <h2>3. Por que a IA escolheu/rejeitou</h2>
+        <div class="info-box"><ul>${alignReasons || '<li>Sem justificativa de alinhamento.</li>'}</ul></div>
+
+        <h2>4. Hipóteses de vantagem</h2>
         <div class="info-box"><ul>${hypsHtml || '<li>Sem hipóteses geradas.</li>'}</ul></div>
 
-        <h2>4. Decisão do V26 Core</h2>
-        <p class="muted">${coreDecision.narrative || ''}</p>
-        ${candidatesHtml}
+        <h2>5. Ranking IA + V26</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Mercado</th><th>Odd</th><th>Classe Core</th><th>EV Core</th><th>Stake Core</th><th>Score IA</th>
+            </tr>
+          </thead>
+          <tbody>${iaRankingHtml}</tbody>
+        </table>
 
-        ${rejectedHtml ? `<h2>Mercados rejeitados / bloqueados</h2>${rejectedHtml}` : ''}
+        <h2>6. Comparação com Core puro</h2>
+        <div class="info-box">
+          <b>Core puro:</b> ${corePure.market || ''} · Classe ${corePure.classification || ''} · EV ${Number(corePure.ev || 0).toFixed(1)}% · ${corePure.stake || ''}<br>
+          <b>IA + V26:</b> ${decision.market || ''} · Classe ${decision.classification || ''} · EV ${Number(decision.ev || 0).toFixed(1)}% · ${decision.stake || ''}
+          <br><br>
+          O botão Rodar V26 Core mostra o ranking matemático puro. O botão IA + V26 reordena pelo encaixe entre odds, contexto e Core.
+        </div>
 
-        <h2>Ranking completo do Core</h2>
+        <h2>Alertas do Core</h2>
+        <div class="info-box"><ul>${(coreDecision.alerts || []).map(a => `<li>${a}</li>`).join('')}</ul></div>
       `;
 
-      // Acrescenta o ranking padrão abaixo.
-      const old = $('resultBox').innerHTML;
-      renderResult(core);
-      $('resultBox').innerHTML = old + $('resultBox').innerHTML;
       setStatus(data.decision === 'NO_BET' ? 'warn' : 'ok', 'IA + V26 pronto');
     }
 
