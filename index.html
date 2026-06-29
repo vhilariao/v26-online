@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v2.2.2</title>
+  <title>V26 Web v2.3</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -249,8 +249,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v2.2.2</h1>
-          <div class="subtitle">Dashboard + Odds Multi-Provider + Contexto IA + V26 Core</div>
+          <h1>V26 Web v2.3</h1>
+          <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -368,22 +368,6 @@
             <button id="oddsEventsBtn">Ver eventos com odds</button>
             <button id="oddsSportsBtn">Ver sports keys</button>
           </div>
-          <div class="grid two">
-            <div>
-              <label for="oddsIoLeague">Odds-API.io liga opcional</label>
-              <input id="oddsIoLeague" placeholder="Ex: brazil-serie-b / vazio para buscar geral" />
-            </div>
-            <div>
-              <label for="oddsIoBookmakers">Odds-API.io bookmakers</label>
-              <input id="oddsIoBookmakers" value="Bet365,Unibet,SingBet" />
-            </div>
-          </div>
-          <div class="actions">
-            <button id="oddsIoDashboardBtn" class="primary">Dashboard Odds-API.io da data</button>
-            <button id="oddsIoMatchBtn" class="good">Buscar Odds-API.io por data</button>
-            <button id="oddsIoEventsBtn">Eventos Odds-API.io da data</button>
-            <button id="oddsIoSportsBtn">Sports Odds-API.io</button>
-          </div>
           <div id="oddsInfo" class="muted small">Odds automáticas são referência. Agora o campo de odds recebe só linhas limpas; relatório fica abaixo. HT pode exigir Pinnacle manual.</div>
           <div id="oddsBox"></div>
         </section>
@@ -398,6 +382,7 @@
 
         <div class="actions">
           <button id="webScanBtn" class="good">Gerar Contexto IA</button>
+          <button id="v26ThinkBtn" class="primary">Gerar Contexto IA V26</button>
         </div>
         <div id="contextInfo" class="muted small context-note">A API faz a varredura técnica. Você revisa o Contexto Mestre antes de rodar a V26.</div>
         <div id="scanBox"></div>
@@ -426,7 +411,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v2.2.2: Odds-API.io mostra os eventos disponíveis da data escolhida; você seleciona o jogo visualmente. Parser recebe só odds limpas. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v2.3: IA busca e organiza contexto como checklist V26. Odds automáticas ficam secundárias; Pinnacle/manual valida mercado final. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -442,7 +427,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v2.2.2 — Dashboard Odds-API.io por data. V26 decide.</div>
+    <div class="footer-note">V26 Web v2.3 — Contexto IA V26 com travas. V26 decide.</div>
   </main>
 
   <script>
@@ -948,206 +933,54 @@
 
 
 
-    function renderOddsIoMatch(data) {
-      const box = $('oddsBox');
-      const info = $('oddsInfo');
-      const warnings = (data.warnings || []).join(' ');
-      if (data.status === 'setup_required') {
-        info.innerHTML = `<div class="warn">Falta ODDS_API_IO_KEY no Render.</div>`;
-        return;
-      }
-      if (data.status !== 'ok') {
-        box.innerHTML = '<div class="info-box">Odds-API.io não encontrou odds para esse jogo na data selecionada. Tente sem liga, outra data ou ajuste bookmakers.</div>';
-        info.innerHTML = `<div class="warn">${warnings}</div>`;
-        return;
-      }
-      $('oddsText').value = data.odds_text || $('oddsText').value;
-      const event = data.match || {};
-      const quota = (data.metadata || {}).rate_limit_remaining ? ` · limite restante: ${(data.metadata || {}).rate_limit_remaining}` : '';
-      info.innerHTML = `<div class="success">Odds-API.io encontrou ${event.home || $('homeTeam').value} x ${event.away || $('awayTeam').value}.${quota}</div>`;
-      const summary = data.market_summary || {};
-      const summaryHtml = Object.keys(summary).length ? `
-        <div class="odds-row">
-          <b>Mercados Odds-API.io encontrados</b>
-          <span>${Object.keys(summary).map(k => `${k}: ${summary[k].bookmakers || 0} books`).join(' · ')}</span>
-        </div>
-      ` : '';
-      box.innerHTML = summaryHtml + `<div class="info-box">${warnings}</div>`;
-    }
-
-    function renderOddsIoEvents(data) {
-      const events = data.events || [];
-      const box = $('oddsBox');
-      if (!events.length) {
-        box.innerHTML = '<div class="info-box">Nenhum evento Odds-API.io retornado.</div>';
-        return;
-      }
-      box.innerHTML = events.slice(0, 30).map((e, idx) => `
-        <div class="odds-row">
-          <b>${e.home} x ${e.away}</b>
-          <span>${(e.league || {}).name || (e.league || {}).slug || ''} · ${fmtUtc(e.date)} · ${e.status || ''} · Odds-API.io</span>
-          <button data-oddsio-event="${idx}">Usar este evento</button>
-          <button data-oddsio-odds="${idx}">Buscar odds deste evento</button>
+    function renderV26Think(data) {
+      const box = $('scanBox');
+      const sections = data.sections || {};
+      const gates = data.gates || [];
+      const missing = data.missing_questions || [];
+      const sources = data.source_panel || {};
+      const gateRows = gates.map(g => `
+        <div class="scan-link">
+          <b>${g.passed ? 'OK' : 'TRAVA'} · ${g.name}</b>
+          <span>${g.message}</span>
+          <span>Ação: ${g.action}</span>
         </div>
       `).join('');
-      [...document.querySelectorAll('[data-oddsio-event]')].forEach(btn => {
-        btn.addEventListener('click', () => {
-          const e = events[Number(btn.dataset.oddsioEvent)];
-          $('homeTeam').value = e.home || '';
-          $('awayTeam').value = e.away || '';
-          $('competition').value = ((e.league || {}).name || (e.league || {}).slug || $('competition').value);
-          $('oddsInfo').innerHTML = '<div class="success">Evento Odds-API.io selecionado. Agora busque odds.</div>';
-        });
-      });
-      [...document.querySelectorAll('[data-oddsio-odds]')].forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const e = events[Number(btn.dataset.oddsioOdds)];
-          const bookmakers = ($('oddsIoBookmakers') && $('oddsIoBookmakers').value.trim()) || 'Bet365,Unibet,SingBet';
-          try {
-            const qs = new URLSearchParams({ event_id: e.id, bookmakers });
-            const data = await request(`/odds-io/odds?${qs.toString()}`);
-            renderOddsIoMatch(data);
-          } catch (err) {
-            $('oddsInfo').innerHTML = `<div class="error">Erro Odds-API.io evento: ${err.message || err}</div>`;
-          }
-        });
-      });
-    }
+      const missingRows = missing.map(q => `<li>${q}</li>`).join('');
+      const sourceRows = Object.entries(sources.domains || {}).map(([d, n]) => `<span class="pill">${d}: ${n}</span>`).join('');
 
-    function renderOddsIoSports(data) {
-      const sports = data.sports || [];
-      $('oddsBox').innerHTML = sports.slice(0, 40).map(s => `
-        <div class="odds-row">
-          <b>${s.name || s.slug || JSON.stringify(s)}</b>
-          <span>${s.slug || ''}</span>
+      box.innerHTML = `
+        <div class="info-box">
+          <b>Contexto IA V26 gerado</b><br>
+          Teto contextual: <b>${data.context_cap || 'N/D'}</b><br>
+          Próxima ação: ${data.recommended_next_action || ''}
         </div>
-      `).join('') || '<div class="info-box">Nenhum esporte retornado.</div>';
-      $('oddsInfo').innerHTML = `<div class="success">Sports Odds-API.io carregados.</div>`;
+        <h3>Travas V26</h3>
+        ${gateRows || '<div class="info-box">Sem travas retornadas.</div>'}
+        <h3>Perguntas pendentes</h3>
+        <div class="info-box"><ul>${missingRows}</ul></div>
+        <h3>Fontes</h3>
+        <div class="info-box">${sourceRows || 'Sem domínios fortes retornados.'}<br>${sources.leitura_v26 || ''}</div>
+      `;
+
+      if ($('finalContextText')) {
+        $('finalContextText').value = data.context_master || '';
+      }
+      $('contextInfo').innerHTML = `<div class="success">Contexto IA V26 pronto. Revise as travas antes de Rodar V26 Core.</div>`;
     }
 
-
-    function renderOddsIoDashboard(data) {
-      const events = data.events || [];
-      const box = $('oddsBox');
-      if (!events.length) {
-        box.innerHTML = '<div class="info-box">A Odds-API.io não retornou jogos para essa data/filtro. Teste outra data, limpe o campo liga ou toque em Sports Odds-API.io.</div>';
-        return;
-      }
-      box.innerHTML = events.slice(0, 80).map((e, idx) => `
-        <div class="odds-row">
-          <b>${e.home || 'Mandante'} x ${e.away || 'Visitante'}</b>
-          <span>${(e.league || {}).name || (e.league || {}).slug || ''} · ${fmtUtc(e.date)} · ${e.status || ''} · ID: ${e.id}</span>
-          <button data-oddsio-use-dashboard="${idx}">Selecionar jogo</button>
-          <button data-oddsio-odds-dashboard="${idx}">Buscar odds deste jogo</button>
-        </div>
-      `).join('');
-
-      [...document.querySelectorAll('[data-oddsio-use-dashboard]')].forEach(btn => {
-        btn.addEventListener('click', () => {
-          const e = events[Number(btn.dataset.oddsioUseDashboard)];
-          $('homeTeam').value = e.home || '';
-          $('awayTeam').value = e.away || '';
-          $('competition').value = ((e.league || {}).name || (e.league || {}).slug || $('competition').value);
-          $('oddsInfo').innerHTML = '<div class="success">Jogo selecionado pelo Dashboard Odds-API.io. Agora busque odds deste jogo ou rode contexto.</div>';
-        });
-      });
-
-      [...document.querySelectorAll('[data-oddsio-odds-dashboard]')].forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const e = events[Number(btn.dataset.oddsioOddsDashboard)];
-          const bookmakers = ($('oddsIoBookmakers') && $('oddsIoBookmakers').value.trim()) || 'Bet365,Unibet,SingBet';
-          $('oddsInfo').innerHTML = '<span class="muted">Buscando odds do evento selecionado...</span>';
-          try {
-            const qs = new URLSearchParams({ event_id: e.id, bookmakers });
-            const data = await request(`/odds-io/odds?${qs.toString()}`);
-            renderOddsIoMatch(data);
-            $('homeTeam').value = e.home || $('homeTeam').value;
-            $('awayTeam').value = e.away || $('awayTeam').value;
-            $('competition').value = ((e.league || {}).name || (e.league || {}).slug || $('competition').value);
-          } catch (err) {
-            $('oddsInfo').innerHTML = `<div class="error">Erro ao buscar odds do evento: ${err.message || err}</div>`;
-          }
-        });
-      });
-    }
-
-    if ($('oddsIoDashboardBtn')) $('oddsIoDashboardBtn').addEventListener('click', async () => {
-      const btn = $('oddsIoDashboardBtn');
+    if ($('v26ThinkBtn')) $('v26ThinkBtn').addEventListener('click', async () => {
+      const btn = $('v26ThinkBtn');
       btn.disabled = true;
-      $('oddsInfo').innerHTML = '<span class="muted">Carregando Dashboard Odds-API.io da data...</span>';
+      $('contextInfo').innerHTML = '<span class="muted">Gerando Contexto IA V26 com travas...</span>';
       try {
-        const qs = new URLSearchParams({
-          sport: 'football',
-          league: ($('oddsIoLeague') && $('oddsIoLeague').value.trim()) || '',
-          date: ($('agendaDate') && $('agendaDate').value) || '',
-          limit: '200'
+        const data = await request('/context/v26-think', {
+          method: 'POST',
+          body: JSON.stringify(webScanPayload())
         });
-        const data = await request(`/odds-io/dashboard?${qs.toString()}`);
-        renderOddsIoDashboard(data);
-        const quota = (data.metadata || {}).rate_limit_remaining ? ` Limite restante: ${(data.metadata || {}).rate_limit_remaining}.` : '';
-        $('oddsInfo').innerHTML = `<div class="success">Dashboard Odds-API.io: ${(data.events || []).length} jogos/eventos na data.${quota}</div>`;
+        renderV26Think(data);
       } catch (err) {
-        $('oddsInfo').innerHTML = `<div class="error">Erro Dashboard Odds-API.io: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-
-    if ($('oddsIoMatchBtn')) $('oddsIoMatchBtn').addEventListener('click', async () => {
-      const btn = $('oddsIoMatchBtn');
-      btn.disabled = true;
-      $('oddsInfo').innerHTML = '<span class="muted">Buscando Odds-API.io...</span>';
-      try {
-        const qs = new URLSearchParams({
-          home: $('homeTeam').value.trim(),
-          away: $('awayTeam').value.trim(),
-          sport: 'football',
-          league: ($('oddsIoLeague') && $('oddsIoLeague').value.trim()) || '',
-          bookmakers: ($('oddsIoBookmakers') && $('oddsIoBookmakers').value.trim()) || 'Bet365,Unibet,SingBet',
-          date: ($('agendaDate') && $('agendaDate').value) || '',
-          limit: '100'
-        });
-        const data = await request(`/odds-io/match?${qs.toString()}`);
-        renderOddsIoMatch(data);
-      } catch (err) {
-        $('oddsInfo').innerHTML = `<div class="error">Erro Odds-API.io: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    if ($('oddsIoEventsBtn')) $('oddsIoEventsBtn').addEventListener('click', async () => {
-      const btn = $('oddsIoEventsBtn');
-      btn.disabled = true;
-      $('oddsInfo').innerHTML = '<span class="muted">Carregando eventos Odds-API.io...</span>';
-      try {
-        const qs = new URLSearchParams({
-          sport: 'football',
-          league: ($('oddsIoLeague') && $('oddsIoLeague').value.trim()) || '',
-          date: ($('agendaDate') && $('agendaDate').value) || '',
-          limit: '100'
-        });
-        const data = await request(`/odds-io/events?${qs.toString()}`);
-        renderOddsIoEvents(data);
-        const quota = (data.metadata || {}).rate_limit_remaining ? ` Limite restante: ${(data.metadata || {}).rate_limit_remaining}.` : '';
-        $('oddsInfo').innerHTML = `<div class="success">Eventos Odds-API.io da data: ${(data.events || []).length}.${quota}</div>`;
-      } catch (err) {
-        $('oddsInfo').innerHTML = `<div class="error">Erro eventos Odds-API.io: ${err.message || err}</div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    if ($('oddsIoSportsBtn')) $('oddsIoSportsBtn').addEventListener('click', async () => {
-      const btn = $('oddsIoSportsBtn');
-      btn.disabled = true;
-      $('oddsInfo').innerHTML = '<span class="muted">Carregando sports Odds-API.io...</span>';
-      try {
-        const data = await request('/odds-io/sports');
-        renderOddsIoSports(data);
-      } catch (err) {
-        $('oddsInfo').innerHTML = `<div class="error">Erro sports Odds-API.io: ${err.message || err}</div>`;
+        $('contextInfo').innerHTML = `<div class="error">Erro no Contexto IA V26: ${err.message || err}</div>`;
       } finally {
         btn.disabled = false;
       }
