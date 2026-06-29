@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v1.9.2</title>
+  <title>V26 Web v1.9.3</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -228,8 +228,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v1.9.2</h1>
-          <div class="subtitle">Agenda de Jogos + Contexto IA + V26 Core</div>
+          <h1>V26 Web v1.9.3</h1>
+          <div class="subtitle">Dashboard Automático + Agenda Híbrida + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -264,7 +264,7 @@
 
     <div class="grid" style="margin-top:16px;">
       <section class="card">
-        <h2>0. Agenda de jogos</h2>
+        <h2>0. Dashboard — jogos de hoje</h2>
         <div class="grid two">
           <div>
             <label for="agendaDate">Data</label>
@@ -272,14 +272,21 @@
           </div>
           <div>
             <label for="agendaCompetition">Competição opcional</label>
-            <input id="agendaCompetition" placeholder="Ex: BSA, PL, CL, BL1..." />
+            <input id="agendaCompetition" placeholder="Ex: BR_SERIE_B, BSA, PL, CL..." />
           </div>
         </div>
         <div class="actions">
-          <button id="agendaBtn" class="good">Carregar jogos do dia</button>
+          <button id="agendaBtn" class="good">Atualizar Dashboard</button>
           <button id="competitionsBtn">Ver competições</button>
         </div>
-        <div id="agendaInfo" class="muted small">Use a agenda para selecionar jogo sem digitar os times.</div>
+        <div class="actions">
+          <button class="filterBtn" data-agenda-filter="">Todos</button>
+          <button class="filterBtn" data-agenda-filter="BR_SERIE_B">Série B</button>
+          <button class="filterBtn" data-agenda-filter="BSA">Série A</button>
+          <button class="filterBtn" data-agenda-filter="PL">Premier League</button>
+          <button class="filterBtn" data-agenda-filter="CL">Champions</button>
+        </div>
+        <div id="agendaInfo" class="muted small">Dashboard carrega automaticamente os jogos de hoje. Use filtros se necessário.</div>
         <div id="agendaBox" class="agenda-grid"></div>
       </section>
     </div>
@@ -348,7 +355,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v1.9: jogo selecionado pela agenda padroniza times/competição. IA busca contexto; V26 decide. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v1.9.3: Dashboard carrega jogos de hoje automaticamente. football-data é principal; TheSportsDB complementa Série B. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -364,7 +371,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v1.9.2 — Agenda corrigida. Busca do dia ajustada no backend.</div>
+    <div class="footer-note">V26 Web v1.9.3 — Dashboard automático. Jogos de hoje carregam ao abrir.</div>
   </main>
 
   <script>
@@ -598,7 +605,7 @@
         <div class="match-card">
           <b>${m.home_team} x ${m.away_team}</b>
           <span>${m.competition_name || 'Competição'} · ${fmtUtc(m.utc_date)} · ${m.status || ''}</span>
-          <span>${m.area_name || ''}${m.matchday ? ' · rodada ' + m.matchday : ''}</span>
+          <span>${m.area_name || ''}${m.matchday ? ' · rodada ' + m.matchday : ''} · Fonte: ${m.source || 'agenda'}</span>
           <button class="primary" data-match-idx="${idx}">Analisar este jogo</button>
         </div>
       `).join('');
@@ -670,7 +677,7 @@
           info.innerHTML = `<div class="warn">Agenda instalada, mas falta FOOTBALL_DATA_TOKEN no Render.${warningText}</div>`;
           setStatus('warn', 'Agenda pendente');
         } else if (data.status === 'ok') {
-          info.innerHTML = `<div class="success">Agenda carregada: ${(data.matches || []).length} jogos encontrados.${warningText}</div>`;
+          info.innerHTML = `<div class="success">Dashboard atualizado: ${(data.matches || []).length} jogos encontrados. Fonte: ${(data.metadata || {}).provider || 'agenda'}.${warningText}</div>`;
           setStatus('ok', 'Agenda ok');
         } else {
           info.innerHTML = `<div class="error">Erro na agenda.${warningText}</div>`;
@@ -682,6 +689,22 @@
       } finally {
         btn.disabled = false;
       }
+    });
+
+
+    function loadAgendaWithFilter(filterValue) {
+      if ($('agendaCompetition')) $('agendaCompetition').value = filterValue || '';
+      if ($('agendaBtn')) $('agendaBtn').click();
+    }
+
+    [...document.querySelectorAll('.filterBtn')].forEach(btn => {
+      btn.addEventListener('click', () => loadAgendaWithFilter(btn.dataset.agendaFilter || ''));
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if ($('agendaBtn')) $('agendaBtn').click();
+      }, 350);
     });
 
     function webScanPayload() {
