@@ -4,7 +4,289 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v3.5 — HT favorito + aliases. V26 decide.</h2>
+  <title>V26 Web v3.5.1</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel2: #172036;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #263248;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --blue: #38bdf8;
+      --purple: #a78bfa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top, #16213f 0, var(--bg) 52%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 14px 16px;
+      background: rgba(11, 16, 32, 0.86);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: linear-gradient(135deg, #38bdf8, #a78bfa);
+      display: grid; place-items: center;
+      font-weight: 900; color: #07101f;
+    }
+    h1 { font-size: 18px; line-height: 1.1; margin: 0; }
+    .subtitle { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .status {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 6px 10px; background: rgba(17,24,39,.7);
+      white-space: nowrap;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
+    .dot.ok { background: var(--green); }
+    .dot.err { background: var(--red); }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(0,0,0,.22);
+    }
+    .card h2 { font-size: 15px; margin: 0 0 12px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--border); background: #090f1d;
+      color: var(--text); border-radius: 12px; padding: 11px 12px;
+      font: inherit; outline: none;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    button {
+      border: 0; border-radius: 12px; padding: 11px 12px;
+      background: #263248; color: var(--text); font-weight: 700;
+      cursor: pointer; min-height: 44px;
+    }
+    button.primary { background: linear-gradient(135deg, #38bdf8, #a78bfa); color: #07101f; }
+    button.good { background: #164b2a; color: #bff7cf; }
+    button.warn { background: #4a3211; color: #ffdf9b; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px; font-size: 12px;
+      border: 1px solid var(--border); background: #0b1224; color: var(--muted);
+    }
+    .result-hero {
+      background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(167,139,250,.14));
+      border: 1px solid rgba(56,189,248,.25);
+      padding: 14px; border-radius: 16px; margin-top: 10px;
+    }
+    .market { font-size: 18px; font-weight: 900; margin: 0 0 8px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .metric { background: rgba(9,15,29,.82); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+    .metric b { display: block; font-size: 17px; }
+    .metric span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .class-A, .class-A\+ { color: var(--green); }
+    .class-B\+ { color: var(--yellow); }
+    .class-B { color: #fde68a; }
+    .class-C, .class-D { color: #fca5a5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th, td { text-align: left; border-bottom: 1px solid var(--border); padding: 9px 6px; vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .muted { color: var(--muted); }
+    .error { color: #fecaca; background: rgba(127,29,29,.28); border: 1px solid rgba(248,113,113,.25); padding: 10px; border-radius: 12px; }
+    .success { color: #bbf7d0; background: rgba(20,83,45,.28); border: 1px solid rgba(34,197,94,.25); padding: 10px; border-radius: 12px; }
+    .bench-list { display: grid; gap: 8px; margin-top: 10px; }
+    .bench-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; border: 1px solid var(--border); padding: 10px; border-radius: 12px; background: rgba(9,15,29,.72); }
+    .small { font-size: 12px; }
+    .footer-note { color: var(--muted); font-size: 12px; padding: 18px 0 4px; text-align: center; }
+    .context-note { margin-top: 8px; }
+    .info-box {
+      margin-top: 10px;
+      color: #dbeafe;
+      background: rgba(30,64,175,.18);
+      border: 1px solid rgba(59,130,246,.25);
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .scan-box {
+      margin-top: 10px;
+      border: 1px solid rgba(56,189,248,.24);
+      background: rgba(8,47,73,.22);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .scan-links {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .scan-link {
+      display: block;
+      color: #bae6fd;
+      text-decoration: none;
+      background: rgba(9,15,29,.72);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px;
+    }
+    .scan-link b { color: #e0f2fe; }
+    .scan-link span { display: block; color: var(--muted); margin-top: 3px; }
+
+
+
+
+    .odds-row {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(9,15,29,.62);
+      margin: 8px 0;
+    }
+    .odds-row b { color: #e2e8f0; }
+    .odds-row span { color: var(--muted); font-size: 12px; }
+    .odds-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      margin: 2px 4px 2px 0;
+      font-size: 12px;
+    }
+
+    .agenda-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .match-card {
+      display: grid;
+      gap: 6px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(9,15,29,.62);
+    }
+    .match-card b { color: #e2e8f0; }
+    .match-card span { color: var(--muted); font-size: 12px; }
+    .match-card button { width: fit-content; padding: 9px 12px; border-radius: 10px; }
+
+    details.advanced {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(9,15,29,.45);
+    }
+    details.advanced summary {
+      cursor: pointer;
+      color: #cbd5e1;
+      font-weight: 700;
+      list-style: none;
+    }
+    details.advanced summary::-webkit-details-marker { display: none; }
+    details.advanced summary::after {
+      content: " abrir";
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 12px;
+    }
+    details.advanced[open] summary::after { content: " fechar"; }
+
+    .split-note {
+      color: #fde68a;
+      background: rgba(120,53,15,.18);
+      border: 1px solid rgba(245,158,11,.24);
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .row, .row-3 { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .header-inner { align-items: flex-start; }
+      .status { display: inline-flex; margin-top: 8px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo">V26</div>
+        <div>
+          <h1>V26 Web v3.5.1</h1>
+          <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
+        </div>
+      </div>
+      <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section class="card">
+        <h2>1. Conexão da API</h2>
+        <label for="apiUrl">URL da V26 Core API</label>
+        <input id="apiUrl" placeholder="https://sua-api.onrender.com" />
+        <div class="actions">
+          <button id="saveApi" class="good">Salvar API</button>
+          <button id="testApi">Testar conexão</button>
+          <button id="runBench" class="warn">Rodar benchmarks</button>
+        </div>
+        <div id="benchmarksBox"></div>
+      </section>
+
+      <section class="card">
+        <h2>2. Benchmarks rápidos</h2>
+        <div class="actions">
+          <button data-sample="criciuma">Criciúma</button>
+          <button data-sample="operario">Operário</button>
+          <button data-sample="novo">Novorizontino</button>
+          <button data-sample="avai">Athletic x Avaí</button>
+        </div>
+        <p class="muted small">Use para validar se a API está respondendo igual aos casos oficiais da V26.</p>
+      </section>
+    </div>
+
+    <div class="grid" style="margin-top:16px;">
+      <section class="card">
+        <h2>0. Dashboard — jogos de hoje</h2>
         <div class="grid two">
           <div>
             <label for="agendaDate">Data</label>
@@ -242,7 +524,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v3.5: além do manual Pinnacle, o V26 reconhece HT ML e -0.5 HT do favorito. Aliases Alemanha/Germany e Paraguai/Paraguay evitam perder score IA. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v3.5.1: tela branca corrigida. Use Entrada Manual Pinnacle como fluxo principal. Para Alemanha x Paraguai, adicionar Alemanha -0.5 HT/HT ML e rodar V26 com backend v3.5. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -259,7 +541,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v3.4 — Manual Pinnacle + IA V26. V26 decide.</div>
+    <div class="footer-note">V26 Web v3.5.1 — hotfix tela branca + HT favorito. V26 decide.</div>
   </main>
 
   <script>
@@ -576,6 +858,7 @@
       $('oddsText').value = frontendCleanOddsText([current, line].filter(Boolean).join('\n'));
       $('manualInfo').innerHTML = '<div class="success">Brasil TT HT Over 0.5 adicionado. Ajuste a odd se necessário.</div>';
     });
+
 
     if ($('manualGermanyHtBtn')) $('manualGermanyHtBtn').addEventListener('click', () => {
       const line = 'Handicap Alemanha HT -0.5 @1.769 [Pinnacle]';
