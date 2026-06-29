@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v2.3</title>
+  <title>V26 Web v2.4</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -249,7 +249,7 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v2.3</h1>
+          <h1>V26 Web v2.4</h1>
           <div class="subtitle">Dashboard + Contexto IA V26 + V26 Core</div>
         </div>
       </div>
@@ -411,7 +411,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v2.3: IA busca e organiza contexto como checklist V26. Odds automáticas ficam secundárias; Pinnacle/manual valida mercado final. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v2.4: IA mostra se pesquisou de verdade; Core bloqueia linhas alternativas extremas e odds automáticas não-Pinnacle. Se tudo for C/D, decisão é NÃO APOSTAR. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -427,7 +427,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v2.3 — Contexto IA V26 com travas. V26 decide.</div>
+    <div class="footer-note">V26 Web v2.4 — Contexto IA + Core blindado. V26 decide.</div>
   </main>
 
   <script>
@@ -541,7 +541,14 @@
           <td>${moneyBR(ev.stake_units)}</td>
         </tr>
       `).join('');
+      const decisionBox = data.decision ? `
+        <div class="${data.decision === 'NO_BET' ? 'warn' : 'success'}" style="margin-bottom:12px;">
+          <b>${data.decision_label || data.decision}</b><br>
+          ${data.operational_alert || ''}
+        </div>
+      ` : '';
       $('resultBox').innerHTML = `
+        ${decisionBox}
         <div class="result-hero">
           <div class="pill">${data.match} · ${data.mode}</div>
           <p class="market">${m.name}</p>
@@ -939,6 +946,12 @@
       const gates = data.gates || [];
       const missing = data.missing_questions || [];
       const sources = data.source_panel || {};
+      const scanMeta = ((data.web_scan || {}).metadata || {});
+      const scanStatus = ((data.web_scan || {}).status || data.status || '');
+      const realSearch = scanStatus !== 'setup_required' && scanMeta.setup_required !== true;
+      const searchAudit = realSearch
+        ? `Busca real: SIM · brutos: ${scanMeta.raw_results_count ?? 0} · relevantes: ${scanMeta.relevant_results_count ?? 0} · finais: ${scanMeta.deduped_results_count ?? 0}`
+        : 'Busca real: NÃO · falta TAVILY_API_KEY ou a busca não executou.';
       const gateRows = gates.map(g => `
         <div class="scan-link">
           <b>${g.passed ? 'OK' : 'TRAVA'} · ${g.name}</b>
@@ -952,6 +965,7 @@
       box.innerHTML = `
         <div class="info-box">
           <b>Contexto IA V26 gerado</b><br>
+          ${searchAudit}<br>
           Teto contextual: <b>${data.context_cap || 'N/D'}</b><br>
           Próxima ação: ${data.recommended_next_action || ''}
         </div>
@@ -997,7 +1011,7 @@
         market_focus: '',
         manual_context: $('contextText').value,
         current_context_master: $('finalContextText') ? $('finalContextText').value : '',
-        max_queries: 6,
+        max_queries: 8,
         max_results_per_query: 4
       };
     }
