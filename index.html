@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Web v3.9.8.1</title>
+  <title>V26 Web v3.9.9</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -61,6 +61,9 @@
     .gameMeta { color:var(--muted); font-size:13px; margin-top:4px; }
     .agendaHead { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
     .badge { font-size:12px; padding:4px 8px; border-radius:999px; background:#1e293b; color:#cbd5e1; border:1px solid var(--line); }
+    .noteBox { border:1px solid var(--line); border-radius:16px; padding:12px; background:#0b1220; color:#cbd5e1; margin:10px 0; }
+    .compactTable table th:nth-child(n+5), .compactTable table td:nth-child(n+5) { display:none; }
+    .warningLine { color:#fde68a; font-weight:800; margin:8px 0 2px; }
     .hidden { display:none !important; }
   </style>
 </head>
@@ -69,8 +72,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Web v3.9.8.1</h1>
-      <div class="sub">Dashboard limpo: asiático real → Core V26</div>
+      <h1>V26 Web v3.9.9</h1>
+      <div class="sub">Dashboard limpo: resultado claro → Core V26</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>V26 pronto</div>
   </div>
@@ -421,48 +424,137 @@ function payload() {
 function pct(x){ if(x===null||x===undefined||x==='') return 'N/D'; return Number(x).toFixed(1)+'%'; }
 function val(x){ return x===null||x===undefined||x==='' ? 'N/D' : x; }
 
+function isOperationalMarket(row) {
+  if (!row) return false;
+  const cls = String(row.classification || '').toUpperCase();
+  const stake = Number(row.stake_units || 0);
+  return stake > 0 && ['A+','A','B+','B'].includes(cls);
+}
+
+function marketNameFromRow(row) {
+  return ((row || {}).market || {}).name || '';
+}
+
+function marketOddFromRow(row) {
+  return ((row || {}).market || {}).odds || '';
+}
+
+function firstRejected(s) {
+  const groups = s.ranking_groups || {};
+  const rejected = groups.rejected || [];
+  const ranking = (((s.ia_selection_internal || {}).ranking) || []);
+  return rejected[0] || ranking.find(r => !isOperationalMarket(r)) || null;
+}
+
+function cleanReasons(reasons, isBet) {
+  if (reasons && reasons.length) return reasons;
+  if (isBet) {
+    return [
+      'Mercado passou com classe e stake operacional.',
+      'Entrada oficial deve respeitar a regra V26 de uma aposta por jogo.'
+    ];
+  }
+  return [
+    'Nenhum mercado passou com classe e stake operacional.',
+    'Mercados C/D ficam apenas como rejeitados, mesmo que tenham odd alta.',
+    'Sem stake: não há entrada pré-live pelo V26.'
+  ];
+}
+
 function renderResult(data) {
   const s = data.strategy || {};
+  const groups = s.ranking_groups || {};
   const d = s.decision || {};
   const final = s.v26_final || d || {};
-  const isBet = (d.decision || data.decision) === 'BET_CANDIDATE';
-  const reasons = d.reasons || final.reasons || [];
+  const isBet = (d.decision || data.decision) === 'BET_CANDIDATE' && groups.no_official_entry !== true;
+  const reasons = cleanReasons(d.reasons || final.reasons || [], isBet);
+  const rejected = firstRejected(s);
+
+  const mainCard = isBet
+    ? `<div class="box final">
+        <h2>CANDIDATO À ENTRADA V26</h2>
+        <div style="font-size:20px;line-height:1.35;">
+          <b>${val(final.market || d.market)}</b><br>
+          Odd ${val(final.odd || d.odd)} · Classe ${val(final.classification || d.classification)} · EV ${pct(final.ev ?? d.ev)} · Stake ${val(final.stake || d.stake)}
+        </div>
+      </div>`
+    : `<div class="box final no">
+        <h2>NÃO APOSTAR</h2>
+        <div style="font-size:20px;line-height:1.35;">
+          <b>Nenhum mercado operacional</b><br>
+          Nenhum mercado passou com classe/stake V26. C/D ficam somente como rejeitados.
+        </div>
+      </div>`;
+
+  const metrics = isBet
+    ? `<div class="grid3" style="margin-top:14px;">
+        <div class="metric"><b>${val(final.classification || d.classification)}</b><span>Classe V26</span></div>
+        <div class="metric"><b>${pct(final.ev ?? d.ev)}</b><span>EV</span></div>
+        <div class="metric"><b>${val(final.stake || d.stake)}</b><span>Stake</span></div>
+        <div class="metric"><b>${val(final.ic ?? d.ic)}</b><span>IC</span></div>
+        <div class="metric"><b>${pct(final.confidence ?? d.confidence)}</b><span>Confiança</span></div>
+        <div class="metric"><b>${pct(final.risk ?? d.risk)}</b><span>Risco</span></div>
+      </div>`
+    : `<div class="grid3" style="margin-top:14px;">
+        <div class="metric"><b>Sem entrada</b><span>Status V26</span></div>
+        <div class="metric"><b>R$ 0,00</b><span>Stake</span></div>
+        <div class="metric"><b>Não operacional</b><span>EV</span></div>
+      </div>`;
+
+  const thesisBox = isBet
+    ? `<h2 style="margin-top:18px;">Tese da entrada</h2>
+       <div class="box">${buildEntryThesis(s, final, d)}</div>`
+    : `<h2 style="margin-top:18px;">Leitura da reprovação</h2>
+       <div class="box">${buildNoBetThesis(s, rejected)}</div>`;
+
   $('resultBox').innerHTML = `
-    <div class="box ${isBet ? 'final' : 'final no'}">
-      <h2>${isBet ? 'CANDIDATO À ENTRADA V26' : 'NÃO APOSTAR'}</h2>
-      <div style="font-size:20px;line-height:1.35;">
-        <b>${val(final.market || d.market)}</b><br>
-        Odd ${val(final.odd || d.odd)} · Classe ${val(final.classification || d.classification)} · EV ${pct(final.ev ?? d.ev)} · Stake ${val(final.stake || d.stake)}
-      </div>
-    </div>
-    <div class="grid3" style="margin-top:14px;">
-      <div class="metric"><b>${val(final.classification || d.classification)}</b><span>Classe V26</span></div>
-      <div class="metric"><b>${pct(final.ev ?? d.ev)}</b><span>EV</span></div>
-      <div class="metric"><b>${val(final.stake || d.stake)}</b><span>Stake</span></div>
-      <div class="metric"><b>${val(final.ic ?? d.ic)}</b><span>IC</span></div>
-      <div class="metric"><b>${pct(final.confidence ?? d.confidence)}</b><span>Confiança</span></div>
-      <div class="metric"><b>${pct(final.risk ?? d.risk)}</b><span>Risco</span></div>
-    </div>
+    ${mainCard}
+    ${metrics}
     <h2 style="margin-top:18px;">Leitura V26</h2>
     <div class="box">${s.headline || ''}<br><br>${s.operational_decision || data.operational_alert || ''}</div>
-    <h2 style="margin-top:18px;">Mercado primeiro</h2>
-    <div class="box">${(s.market_first || {}).reading || ''}</div>
+    ${thesisBox}
     <h2 style="margin-top:18px;">Contexto contra a odd</h2>
-    <div class="box">${(s.context_vs_price || {}).reading || ''}</div>
+    <div class="box">${(s.context_vs_price || {}).reading || 'Contexto usado apenas para confirmar se a probabilidade real supera a exigência da odd.'}</div>
     <h2 style="margin-top:18px;">Por que passou/reprovou</h2>
-    <div class="box"><ul>${reasons.map(r => `<li>${r}</li>`).join('') || '<li>Sem justificativas detalhadas retornadas.</li>'}</ul></div>
-    <details class="panel" style="margin-top:16px;">
+    <div class="box"><ul>${reasons.map(r => `<li>${r}</li>`).join('')}</ul></div>
+    <details class="panel" style="margin-top:16px;" open>
       <summary>Ver mercados comparados</summary>
       ${renderMarkets(s)}
     </details>
   `;
   setStatus(isBet ? 'ok' : 'bad', isBet ? 'Entrada V26' : 'Não apostar');
 }
-function rowTable(rows, title) {
+
+function buildEntryThesis(s, final, d) {
+  const groups = s.ranking_groups || {};
+  const eq = groups.equivalent_valid || [];
+  const secondary = groups.secondary_candidates || [];
+  const market = val(final.market || d.market);
+  const equivalentText = eq.length ? `<br><br><b>Equivalente válido:</b> ${marketNameFromRow(eq[0])} @${marketOddFromRow(eq[0])}.` : '';
+  const secondaryText = secondary.length ? `<br><br><b>Candidato secundário:</b> ${marketNameFromRow(secondary[0])}. Não apostar junto; regra V26 = uma aposta por jogo.` : '';
+  return `<b>Mercado selecionado:</b> ${market}.<br>
+          <b>Função:</b> capturar a melhor tese entre preço, contexto e Core V26.
+          ${equivalentText}${secondaryText}`;
+}
+
+function buildNoBetThesis(s, rejected) {
+  if (!rejected) {
+    return 'Nenhum mercado operacional foi encontrado. O V26 não selecionou entrada.';
+  }
+  return `<b>Melhor mercado rejeitado:</b> ${marketNameFromRow(rejected)} @${marketOddFromRow(rejected)}.<br>
+          <b>Status:</b> ${val(rejected.classification)} / sem stake.<br>
+          <b>Leitura:</b> mercado observado, mas não operacional. Não usar como entrada.`;
+}
+
+function rowTable(rows, title, mode='full') {
   if (!rows || !rows.length) return '';
-  return `<h3>${title}</h3><table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risco</th><th>Stake</th></tr></thead><tbody>
+  const cls = mode === 'compact' ? ' class="compactTable"' : '';
+  const subtitle = title === 'Candidatos secundários'
+    ? '<div class="warningLine">Não apostar junto com a entrada oficial. Regra V26: uma aposta por jogo.</div>'
+    : '';
+  return `<div${cls}><h3>${title}</h3>${subtitle}<table><thead><tr><th>#</th><th>Mercado</th><th>Odd</th><th>Classe</th><th>EV</th><th>IC</th><th>Conf.</th><th>Risco</th><th>Stake</th></tr></thead><tbody>
   ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${(r.market||{}).name||''}</td><td>${val((r.market||{}).odds)}</td><td>${val(r.classification)}</td><td>${r.stake_units ? pct(r.ev_percent) : 'não operacional'}</td><td>${val(r.ic)}</td><td>${pct(r.confidence)}</td><td>${pct(r.risk)}</td><td>${r.stake_units ? 'R$ '+r.stake_units+',00' : 'R$ 0,00'}</td></tr>`).join('')}
-  </tbody></table>`;
+  </tbody></table></div>`;
 }
 
 function renderMarkets(s) {
@@ -474,8 +566,8 @@ function renderMarkets(s) {
       groups.official_entry ? rowTable([groups.official_entry], 'Entrada oficial V26') : '',
       rowTable(groups.equivalent_valid || [], 'Equivalentes válidos'),
       rowTable(groups.secondary_candidates || [], 'Candidatos secundários'),
-      rowTable(groups.rejected || [], 'Rejeitados / sem entrada'),
-      rowTable(groups.unsupported || [], 'Fora do Core')
+      rowTable(groups.rejected || [], 'Rejeitados / sem entrada', 'compact'),
+      rowTable(groups.unsupported || [], 'Fora do Core', 'compact')
     ].filter(Boolean).join('');
     return html || '<div class="hint">Sem ranking retornado.</div>';
   }
