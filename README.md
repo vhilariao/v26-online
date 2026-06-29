@@ -1,5 +1,9 @@
-# V26 Web v1.9.1 — Agenda corrigida
+# V26 Web v2.1 — Odds avançadas
 
-Correção:
-- A seção "0. Agenda de jogos" agora aparece antes da Nova análise.
-- Mantém GET /agenda no backend v1.9.
+Mudanças:
+- Botão Buscar odds básicas.
+- Botão Buscar odds avançadas.
+- Campo de mercados avançados por evento.
+- Tenta BTTS, DNB, handicaps alternativos e totals alternativos.
+- Exibe resumo dos mercados encontrados.
+- HT permanece manual se não aparecer na API.

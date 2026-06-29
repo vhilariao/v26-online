@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <title>V26 Web v2.0</title>
+  <title>V26 Web v2.1</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" />
   <style>
@@ -249,8 +249,8 @@
       <div class="brand">
         <div class="logo">V26</div>
         <div>
-          <h1>V26 Web v2.0</h1>
-          <div class="subtitle">Dashboard + Odds Automáticas + Contexto IA + V26 Core</div>
+          <h1>V26 Web v2.1</h1>
+          <div class="subtitle">Dashboard + Odds Avançadas + Contexto IA + V26 Core</div>
         </div>
       </div>
       <div class="status" id="apiStatus"><span class="dot"></span><span>API não testada</span></div>
@@ -356,16 +356,19 @@
               <input id="oddsRegions" value="eu,uk,us" />
             </div>
             <div>
-              <label for="oddsMarkets">Mercados</label>
+              <label for="oddsMarkets">Mercados básicos</label>
               <input id="oddsMarkets" value="h2h,spreads,totals" />
             </div>
           </div>
+          <label for="oddsAdvancedMarkets">Mercados avançados por evento</label>
+          <input id="oddsAdvancedMarkets" value="h2h,spreads,totals,btts,draw_no_bet,alternate_spreads,alternate_totals" />
           <div class="actions">
-            <button id="oddsMatchBtn" class="good">Buscar odds do jogo</button>
+            <button id="oddsMatchBtn" class="good">Buscar odds básicas</button>
+            <button id="oddsAdvancedBtn" class="primary">Buscar odds avançadas</button>
             <button id="oddsEventsBtn">Ver eventos com odds</button>
             <button id="oddsSportsBtn">Ver sports keys</button>
           </div>
-          <div id="oddsInfo" class="muted small">Odds automáticas são referência. Valide a odd real da Pinnacle antes da entrada.</div>
+          <div id="oddsInfo" class="muted small">Odds automáticas são referência. Avançadas tentam BTTS/DNB/linhas alternativas. HT pode exigir Pinnacle manual.</div>
           <div id="oddsBox"></div>
         </section>
 
@@ -407,7 +410,7 @@
         <label for="finalContextText">Contexto Mestre final enviado à V26</label>
         <textarea id="finalContextText" placeholder="Depois de revisar, toque em Consolidar Contexto Mestre. A V26 usará este texto se estiver preenchido."></textarea>
         <div class="split-note">
-          Regra v2.0: Dashboard seleciona jogo, Odds API preenche mercados, IA prepara contexto e V26 decide. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
+          Regra v2.1: odds básicas localizam o evento; odds avançadas tentam BTTS, DNB e linhas alternativas. HT segue manual se não vier pela API. A API executa varredura, pesos e blocos internamente. Se divergir do contexto manual, prevalece a leitura mestre validada.
         </div>
 
         <div class="actions">
@@ -423,7 +426,7 @@
       </section>
     </div>
 
-    <div class="footer-note">V26 Web v2.0 — Dashboard + odds automáticas. V26 decide.</div>
+    <div class="footer-note">V26 Web v2.1 — Odds avançadas por evento. V26 decide.</div>
   </main>
 
   <script>
@@ -777,7 +780,8 @@
       const regions = ($('oddsRegions') && $('oddsRegions').value.trim()) || 'eu,uk,us';
       const markets = ($('oddsMarkets') && $('oddsMarkets').value.trim()) || 'h2h,spreads,totals';
       const bookmakers = ($('oddsBookmakers') && $('oddsBookmakers').value.trim()) || '';
-      return { sportKey, regions, markets, bookmakers };
+      const advancedMarkets = ($('oddsAdvancedMarkets') && $('oddsAdvancedMarkets').value.trim()) || 'h2h,spreads,totals,btts,draw_no_bet,alternate_spreads,alternate_totals';
+      return { sportKey, regions, markets, bookmakers, advancedMarkets };
     }
 
     function renderOddsMatch(data) {
@@ -797,6 +801,13 @@
       $('oddsText').value = data.odds_text || $('oddsText').value;
       const quota = (data.metadata || {}).quota_remaining ? ` · cota restante: ${(data.metadata || {}).quota_remaining}` : '';
       info.innerHTML = `<div class="success">Odds encontradas para ${match.home_team} x ${match.away_team}.${quota}</div>`;
+      const summary = data.market_summary || {};
+      const summaryHtml = Object.keys(summary).length ? `
+        <div class="odds-row">
+          <b>Mercados encontrados</b>
+          <span>${Object.keys(summary).map(k => `${summary[k].label || k}: ${summary[k].bookmakers || 0} books`).join(' · ')}</span>
+        </div>
+      ` : '';
       const books = (match.bookmakers || []).slice(0, 6).map(b => {
         const markets = (b.markets || []).map(m => {
           const outs = (m.outcomes || []).slice(0, 6).map(o => {
@@ -807,7 +818,7 @@
         }).join('');
         return `<div class="odds-row"><b>${b.title || b.key}</b><span>Atualizado: ${b.last_update || ''}</span>${markets}</div>`;
       }).join('');
-      box.innerHTML = books || '<div class="info-box">Odds convertidas no campo Odds, mas sem resumo visual.</div>';
+      box.innerHTML = summaryHtml + (books || '<div class="info-box">Odds convertidas no campo Odds, mas sem resumo visual.</div>');
     }
 
     function renderOddsEvents(data) {
@@ -853,18 +864,22 @@
       });
     }
 
-    if ($('oddsMatchBtn')) $('oddsMatchBtn').addEventListener('click', async () => {
-      const btn = $('oddsMatchBtn');
+    async function fetchOddsMatch(advanced = false) {
+      const btn = advanced ? $('oddsAdvancedBtn') : $('oddsMatchBtn');
       btn.disabled = true;
-      $('oddsInfo').innerHTML = '<span class="muted">Buscando odds do jogo...</span>';
+      $('oddsInfo').innerHTML = `<span class="muted">Buscando odds ${advanced ? 'avançadas' : 'básicas'}...</span>`;
       try {
-        const { sportKey, regions, markets, bookmakers } = oddsParamsBase();
+        const { sportKey, regions, markets, bookmakers, advancedMarkets } = oddsParamsBase();
         const qs = new URLSearchParams({
           home: $('homeTeam').value.trim(),
           away: $('awayTeam').value.trim(),
           sport_key: sportKey,
           competition: $('competition').value.trim(),
-          regions, markets, bookmakers
+          regions,
+          markets,
+          bookmakers,
+          advanced: advanced ? 'true' : 'false',
+          advanced_markets: advancedMarkets
         });
         const data = await request(`/odds/match?${qs.toString()}`);
         renderOddsMatch(data);
@@ -873,7 +888,10 @@
       } finally {
         btn.disabled = false;
       }
-    });
+    }
+
+    if ($('oddsMatchBtn')) $('oddsMatchBtn').addEventListener('click', () => fetchOddsMatch(false));
+    if ($('oddsAdvancedBtn')) $('oddsAdvancedBtn').addEventListener('click', () => fetchOddsMatch(true));
 
     if ($('oddsEventsBtn')) $('oddsEventsBtn').addEventListener('click', async () => {
       const btn = $('oddsEventsBtn');
