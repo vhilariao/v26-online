@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Dashboard v4.0.2</title>
+  <title>V26 Dashboard v4.0.3</title>
   <style>
     :root {
       --bg:#08111f; --card:#101a2e; --card2:#14213a; --text:#e9eef8; --muted:#97a3b7;
@@ -79,8 +79,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Dashboard v4.0.2</h1>
-      <div class="sub">Jogos do dia · IA de agenda · Banco de apostas</div>
+      <h1>V26 Dashboard v4.0.3</h1>
+      <div class="sub">Jogos do dia · IA de agenda · Banco local + backup</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>Carregando</div>
   </div>
@@ -97,7 +97,7 @@
         <div class="chips">
           <span class="chip">Odds/prints ocultos</span>
           <span class="chip">Motor V26 oculto</span>
-          <span class="chip">Banco preservado no backend atual</span>
+          <span class="chip">Banco salvo no celular/navegador</span>
         </div>
       </div>
       <div class="clockBox">
@@ -151,15 +151,34 @@
   <details class="panel" id="bankPanel" open>
     <summary>Banco de apostas / auditoria</summary>
 
-    <details class="panel" style="margin-top:14px;">
+    <details class="panel" style="margin-top:14px;" open>
       <summary>Importar análise gerada no Chat</summary>
-      <div class="hint">Cole aqui o JSON V26_DB gerado no Chat.</div>
+      <div class="hint">Cole aqui o JSON V26_DB gerado no Chat. Agora ele fica salvo localmente no seu navegador/celular.</div>
       <textarea id="chatJsonInput" placeholder='Cole aqui o JSON V26_DB'></textarea>
       <div class="actions">
         <button id="importChatBtn" class="good">Importar JSON do Chat</button>
         <button id="loadAuditBtn" class="secondary">Atualizar Banco/ROI</button>
       </div>
       <div id="chatImportInfo" class="hint"></div>
+    </details>
+
+    <details class="panel" style="margin-top:14px;">
+      <summary>Backup local</summary>
+      <div class="hint">
+        Use exportar backup após registrar apostas. Se trocar de celular, limpar navegador ou reinstalar o app, importe o backup para restaurar.
+      </div>
+      <div class="actions">
+        <button id="exportBackupBtn" class="primary">Exportar backup</button>
+        <button id="copyBackupBtn" class="secondary">Copiar backup</button>
+        <button id="clearLocalBankBtn" class="danger">Limpar banco local</button>
+      </div>
+      <label>Importar backup</label>
+      <textarea id="backupInput" placeholder="Cole aqui o backup JSON exportado anteriormente"></textarea>
+      <div class="actions">
+        <button id="importBackupBtn" class="good">Importar backup</button>
+      </div>
+      <div id="backupInfo" class="hint"></div>
+      <pre id="backupPreview" class="jsonBox" style="display:none;"></pre>
     </details>
 
     <details class="panel" style="margin-top:14px;" open>
@@ -383,20 +402,101 @@ $('askBtn').addEventListener('click', async () => {
   }
 });
 
-function auditFilterQuery() {
-  const qs = new URLSearchParams();
-  qs.set('limit','30');
-  const cls = $('filterClass') ? $('filterClass').value : '';
-  const res = $('filterResult') ? $('filterResult').value : '';
-  const st = $('filterState') ? $('filterState').value : '';
-  if (cls) qs.set('class_v26', cls);
-  if (res) qs.set('result_status', res);
-  if (st) qs.set('decision_state', st);
-  return qs.toString();
+
+const LOCAL_BANK_KEY = 'V26_LOCAL_BANK_V403';
+
+function normalizeEntry(raw) {
+  const e = {...raw};
+  e.id = e.id || Date.now();
+  e.source = e.source || 'chat_v26';
+  e.created_at = e.created_at || new Date().toISOString();
+  e.updated_at = new Date().toISOString();
+
+  e.match = e.match || `${e.home_team || ''} x ${e.away_team || ''}`.trim();
+  e.market = e.market || e.selected_market || '';
+  e.odd_analyzed = Number(e.odd_analyzed || e.entry_odd || 0);
+  e.entry_odd = Number(e.entry_odd || e.odd_analyzed || 0);
+  e.class_v26 = e.class_v26 || e.classification || 'N/D';
+  e.decision_state = e.decision_state || 'ENTRADA_CONDICIONAL';
+  e.result_status = e.result_status || 'pending';
+  e.stake_reais = Number(e.stake_reais || e.actual_stake_reais || e.stake_app_reais || 0);
+  e.actual_stake_reais = Number(e.actual_stake_reais || e.stake_reais || 0);
+  e.ev_percent = Number(e.ev_percent || 0);
+  e.profit_loss_reais = Number(e.profit_loss_reais || 0);
+  e.entry_made = e.entry_made !== false;
+  e.analysis_correct = e.analysis_correct ?? null;
+  e.execution_correct = e.execution_correct ?? null;
+  e.variance = e.variance ?? null;
+  e.verdict = e.verdict || '';
+  e.notes = e.notes || '';
+  return e;
 }
-async function updateAuditEntry(id, values) {
-  const data = await request(`/audit/entries/${id}/result`, {method:'POST', body:JSON.stringify(values)});
-  return data.entry || data;
+function loadLocalBank() {
+  try {
+    const raw = localStorage.getItem(LOCAL_BANK_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeEntry) : [];
+  } catch {
+    return [];
+  }
+}
+function saveLocalBank(entries) {
+  localStorage.setItem(LOCAL_BANK_KEY, JSON.stringify(entries));
+}
+function nextLocalId(entries) {
+  const maxId = entries.reduce((m,e) => Math.max(m, Number(e.id) || 0), 0);
+  return Math.max(maxId + 1, Date.now());
+}
+function auditFilterQuery() {
+  return {
+    class_v26: $('filterClass') ? $('filterClass').value : '',
+    result_status: $('filterResult') ? $('filterResult').value : '',
+    decision_state: $('filterState') ? $('filterState').value : ''
+  };
+}
+function applyLocalFilters(entries) {
+  const f = auditFilterQuery();
+  return entries.filter(e => {
+    if (f.class_v26 && e.class_v26 !== f.class_v26) return false;
+    if (f.result_status && e.result_status !== f.result_status) return false;
+    if (f.decision_state && e.decision_state !== f.decision_state) return false;
+    return true;
+  });
+}
+function calcSummary(entries) {
+  const total_records = entries.length;
+  const made = entries.filter(e => e.entry_made !== false && e.result_status !== 'no_bet');
+  const settled = made.filter(e => ['green','red','void'].includes(e.result_status));
+  const stake = made.reduce((s,e)=>s + Number(e.stake_reais || e.actual_stake_reais || 0), 0);
+  const pl = made.reduce((s,e)=>s + Number(e.profit_loss_reais || 0), 0);
+  const by = {};
+  for (const e of made) {
+    const cls = e.class_v26 || 'N/D';
+    if (!by[cls]) by[cls] = {class_v26:cls,total:0,profit_loss_reais:0,stake_sum_reais:0,roi_percent:0};
+    by[cls].total += 1;
+    by[cls].profit_loss_reais += Number(e.profit_loss_reais || 0);
+    by[cls].stake_sum_reais += Number(e.stake_reais || e.actual_stake_reais || 0);
+  }
+  for (const k of Object.keys(by)) {
+    by[k].roi_percent = by[k].stake_sum_reais ? (by[k].profit_loss_reais / by[k].stake_sum_reais) * 100 : 0;
+  }
+  return {
+    total_records,
+    entries_made: made.length,
+    settled: settled.length,
+    profit_loss_reais: pl,
+    stake_sum_reais: stake,
+    roi_percent: stake ? (pl / stake) * 100 : 0,
+    by_class: Object.values(by).sort((a,b)=>String(a.class_v26).localeCompare(String(b.class_v26)))
+  };
+}
+function updateAuditEntryLocal(id, values) {
+  const entries = loadLocalBank();
+  const idx = entries.findIndex(e => Number(e.id) === Number(id));
+  if (idx < 0) throw new Error('Registro não encontrado no banco local.');
+  entries[idx] = normalizeEntry({...entries[idx], ...values, updated_at:new Date().toISOString()});
+  saveLocalBank(entries);
+  return entries[idx];
 }
 function quickPL(entry, status) {
   const stake = Number(entry.stake_reais || entry.actual_stake_reais || 0);
@@ -410,7 +510,7 @@ async function closeQuick(id, status) {
   if (!entry) return;
   const pl = quickPL(entry, status);
   try {
-    await updateAuditEntry(id, {
+    updateAuditEntryLocal(id, {
       entry_made: true,
       result_status: status,
       profit_loss_reais: pl,
@@ -438,7 +538,7 @@ async function saveAuditEdit(id) {
   const toBool = v => v === '' ? null : v === 'true';
 
   try {
-    await updateAuditEntry(id, {
+    updateAuditEntryLocal(id, {
       entry_made: result !== 'no_bet',
       result_status: result,
       profit_loss_reais: pl,
@@ -448,7 +548,7 @@ async function saveAuditEdit(id) {
       verdict,
       notes
     });
-    $('auditInfo').innerHTML = `<span class="success">Auditoria #${id} atualizada.</span>`;
+    $('auditInfo').innerHTML = `<span class="success">Auditoria #${id} atualizada no banco local.</span>`;
     await refreshAudit();
   } catch (err) {
     $('auditInfo').innerHTML = `<span class="error">Erro ao salvar auditoria #${id}: ${err.message}</span>`;
@@ -494,24 +594,24 @@ function renderAuditEntry(e) {
             <label>Análise correta?</label>
             <select id="audit_${id}_analysis">
               <option value="" ${e.analysis_correct===null?'selected':''}>indefinido</option>
-              <option value="true" ${e.analysis_correct===1?'selected':''}>sim</option>
-              <option value="false" ${e.analysis_correct===0?'selected':''}>não</option>
+              <option value="true" ${e.analysis_correct===true || e.analysis_correct===1?'selected':''}>sim</option>
+              <option value="false" ${e.analysis_correct===false || e.analysis_correct===0?'selected':''}>não</option>
             </select>
           </div>
           <div>
             <label>Execução correta?</label>
             <select id="audit_${id}_execution">
               <option value="" ${e.execution_correct===null?'selected':''}>indefinido</option>
-              <option value="true" ${e.execution_correct===1?'selected':''}>sim</option>
-              <option value="false" ${e.execution_correct===0?'selected':''}>não</option>
+              <option value="true" ${e.execution_correct===true || e.execution_correct===1?'selected':''}>sim</option>
+              <option value="false" ${e.execution_correct===false || e.execution_correct===0?'selected':''}>não</option>
             </select>
           </div>
           <div>
             <label>Foi variância?</label>
             <select id="audit_${id}_variance">
               <option value="" ${e.variance===null?'selected':''}>indefinido</option>
-              <option value="true" ${e.variance===1?'selected':''}>sim</option>
-              <option value="false" ${e.variance===0?'selected':''}>não</option>
+              <option value="true" ${e.variance===true || e.variance===1?'selected':''}>sim</option>
+              <option value="false" ${e.variance===false || e.variance===0?'selected':''}>não</option>
             </select>
           </div>
           <div>
@@ -532,41 +632,39 @@ function renderAuditEntry(e) {
     </div>`;
 }
 async function refreshAudit() {
-  try {
-    const summary = await request('/audit/summary');
-    $('auditSummary').innerHTML = `
-      <div class="grid3">
-        <div class="metric"><b>${summary.total_records}</b><span>Registros</span></div>
-        <div class="metric"><b>${summary.entries_made}</b><span>Apostas feitas</span></div>
-        <div class="metric"><b>${Number(summary.roi_percent || 0).toFixed(2)}%</b><span>ROI</span></div>
-        <div class="metric"><b>R$ ${Number(summary.profit_loss_reais || 0).toFixed(2)}</b><span>Lucro/Prejuízo</span></div>
-        <div class="metric"><b>R$ ${Number(summary.stake_sum_reais || 0).toFixed(2)}</b><span>Stake somada</span></div>
-        <div class="metric"><b>${summary.settled}</b><span>Encerradas</span></div>
-      </div>
-      <h3>ROI por classe</h3>
-      <table><thead><tr><th>Classe</th><th>Total</th><th>Lucro/Prejuízo</th><th>Stake</th><th>ROI</th></tr></thead><tbody>
-      ${(summary.by_class || []).map(r => `<tr><td>${r.class_v26}</td><td>${r.total}</td><td>R$ ${Number(r.profit_loss_reais||0).toFixed(2)}</td><td>R$ ${Number(r.stake_sum_reais||0).toFixed(2)}</td><td>${Number(r.roi_percent||0).toFixed(2)}%</td></tr>`).join('')}
-      </tbody></table>`;
-    const list = await request('/audit/entries?' + auditFilterQuery());
-    const entries = list.entries || [];
-    window.auditEntriesCache = entries;
-    $('auditList').innerHTML = entries.length ? entries.map(renderAuditEntry).join('') : '<div class="hint">Nenhum registro encontrado com estes filtros.</div>';
-  } catch (err) {
-    $('auditSummary').innerHTML = `<span class="error">Erro ao carregar banco: ${err.message}</span>`;
-  }
+  const entriesAll = loadLocalBank();
+  const summary = calcSummary(entriesAll);
+  $('auditSummary').innerHTML = `
+    <div class="grid3">
+      <div class="metric"><b>${summary.total_records}</b><span>Registros locais</span></div>
+      <div class="metric"><b>${summary.entries_made}</b><span>Apostas feitas</span></div>
+      <div class="metric"><b>${Number(summary.roi_percent || 0).toFixed(2)}%</b><span>ROI</span></div>
+      <div class="metric"><b>R$ ${Number(summary.profit_loss_reais || 0).toFixed(2)}</b><span>Lucro/Prejuízo</span></div>
+      <div class="metric"><b>R$ ${Number(summary.stake_sum_reais || 0).toFixed(2)}</b><span>Stake somada</span></div>
+      <div class="metric"><b>${summary.settled}</b><span>Encerradas</span></div>
+    </div>
+    <h3>ROI por classe</h3>
+    <table><thead><tr><th>Classe</th><th>Total</th><th>Lucro/Prejuízo</th><th>Stake</th><th>ROI</th></tr></thead><tbody>
+    ${(summary.by_class || []).map(r => `<tr><td>${r.class_v26}</td><td>${r.total}</td><td>R$ ${Number(r.profit_loss_reais||0).toFixed(2)}</td><td>R$ ${Number(r.stake_sum_reais||0).toFixed(2)}</td><td>${Number(r.roi_percent||0).toFixed(2)}%</td></tr>`).join('')}
+    </tbody></table>`;
+  const entries = applyLocalFilters(entriesAll);
+  window.auditEntriesCache = entries;
+  $('auditList').innerHTML = entries.length ? entries.map(renderAuditEntry).join('') : '<div class="hint">Nenhum registro encontrado com estes filtros.</div>';
 }
 $('importChatBtn').addEventListener('click', async () => {
   const raw = $('chatJsonInput').value.trim();
   if (!raw) return alert('Cole o JSON do Chat primeiro.');
   try {
-    const parsed = JSON.parse(raw);
-    const data = await request('/audit/import-chat', {method:'POST', body:JSON.stringify(parsed)});
-    const entry = data.entry || {};
-    $('chatImportInfo').innerHTML = `<span class="success">Importado: #${entry.id || ''} · ${entry.match || ''}</span>`;
+    const parsed = normalizeEntry(JSON.parse(raw));
+    const entries = loadLocalBank();
+    parsed.id = nextLocalId(entries);
+    entries.unshift(parsed);
+    saveLocalBank(entries);
+    $('chatImportInfo').innerHTML = `<span class="success">Importado localmente: #${parsed.id} · ${parsed.match || ''}</span>`;
     $('chatJsonInput').value = '';
     await refreshAudit();
   } catch (err) {
-    $('chatImportInfo').innerHTML = `<span class="error">JSON inválido ou erro no banco: ${err.message}</span>`;
+    $('chatImportInfo').innerHTML = `<span class="error">JSON inválido: ${err.message}</span>`;
   }
 });
 $('loadAuditBtn').addEventListener('click', refreshAudit);
@@ -577,6 +675,66 @@ $('clearFiltersBtn').addEventListener('click', async () => {
   $('filterState').value = '';
   await refreshAudit();
 });
+function makeBackupObject() {
+  return {
+    app: 'V26',
+    version: 'v4.0.3-local-bank',
+    exported_at: new Date().toISOString(),
+    entries: loadLocalBank()
+  };
+}
+function backupText() {
+  return JSON.stringify(makeBackupObject(), null, 2);
+}
+$('exportBackupBtn').addEventListener('click', () => {
+  const text = backupText();
+  const blob = new Blob([text], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `v26-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  $('backupInfo').innerHTML = '<span class="success">Backup exportado. Guarde este arquivo.</span>';
+});
+$('copyBackupBtn').addEventListener('click', async () => {
+  const text = backupText();
+  $('backupPreview').style.display = 'block';
+  $('backupPreview').textContent = text;
+  try {
+    await navigator.clipboard.writeText(text);
+    $('backupInfo').innerHTML = '<span class="success">Backup copiado para a área de transferência.</span>';
+  } catch {
+    $('backupInfo').innerHTML = '<span class="warning">Não consegui copiar automaticamente. O backup apareceu abaixo para copiar manualmente.</span>';
+  }
+});
+$('importBackupBtn').addEventListener('click', async () => {
+  const raw = $('backupInput').value.trim();
+  if (!raw) return alert('Cole o backup primeiro.');
+  try {
+    const parsed = JSON.parse(raw);
+    const entries = Array.isArray(parsed) ? parsed : (parsed.entries || []);
+    if (!Array.isArray(entries)) throw new Error('Backup sem lista de entradas.');
+    const normalized = entries.map(normalizeEntry);
+    saveLocalBank(normalized);
+    $('backupInfo').innerHTML = `<span class="success">Backup importado: ${normalized.length} registro(s).</span>`;
+    $('backupInput').value = '';
+    await refreshAudit();
+  } catch (err) {
+    $('backupInfo').innerHTML = `<span class="error">Backup inválido: ${err.message}</span>`;
+  }
+});
+$('clearLocalBankBtn').addEventListener('click', async () => {
+  const ok = confirm('Tem certeza? Isso apaga o banco local deste navegador. Exporte backup antes.');
+  if (!ok) return;
+  localStorage.removeItem(LOCAL_BANK_KEY);
+  $('backupInfo').innerHTML = '<span class="warning">Banco local apagado neste navegador.</span>';
+  await refreshAudit();
+});
+
 
 loadAgenda();
 refreshAudit();
