@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>V26 Dashboard v4.0.3</title>
+  <title>V26 Dashboard v4.0.7</title>
   <style>
     :root {
       --bg:#08111f; --card:#101a2e; --card2:#14213a; --text:#e9eef8; --muted:#97a3b7;
@@ -72,6 +72,14 @@
     .quickBtns button { padding:10px 12px; font-size:14px; }
     @media (max-width:740px) { .auditControls{grid-template-columns:1fr;} }
     pre.jsonBox { white-space:pre-wrap; word-break:break-word; background:#06101d; border:1px solid var(--line); border-radius:14px; padding:12px; color:#dbeafe; max-height:360px; overflow:auto; }
+
+    .deleteBar { border:1px solid #7f1d1d; background:#1f0b0b; border-radius:16px; padding:12px; margin:12px 0; }
+    .selectLine { display:flex; align-items:center; gap:8px; margin-bottom:8px; color:#cbd5e1; }
+    .selectLine input { width:auto; transform:scale(1.2); }
+    .statsTableWrap { overflow-x:auto; border:1px solid var(--line); border-radius:14px; }
+    .statsTableWrap table { min-width:820px; }
+    .sampleWarn { color:#fde68a; font-size:12px; }
+    .miniTag { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:2px 7px; color:#cbd5e1; font-size:12px; margin-left:4px; }
   </style>
 </head>
 <body>
@@ -79,8 +87,8 @@
   <div class="head">
     <div class="logo">V26</div>
     <div>
-      <h1>V26 Dashboard v4.0.3</h1>
-      <div class="sub">Jogos do dia · IA de agenda · Banco local + backup</div>
+      <h1>V26 Dashboard v4.0.7</h1>
+      <div class="sub">Jogos do dia · IA de agenda · faixas de índice · combos vencedores</div>
     </div>
     <div id="status" class="status"><span class="dot"></span>Carregando</div>
   </div>
@@ -220,13 +228,165 @@
         </div>
       </div>
 
+      <details style="margin-top:12px;">
+        <summary>Filtros avançados V26</summary>
+        <div class="grid3" style="margin-top:12px;">
+          <div>
+            <label>Mercado contém</label>
+            <input id="filterMarket" placeholder="ex.: Under, BTTS, Handicap, HT" />
+          </div>
+          <div>
+            <label>Tipo de aposta</label>
+            <select id="filterBetType">
+              <option value="">Todos</option>
+              <option value="Under">Under</option>
+              <option value="Over">Over</option>
+              <option value="BTTS">BTTS / Ambas marcam</option>
+              <option value="Handicap FT">Handicap FT</option>
+              <option value="Handicap HT">Handicap HT</option>
+              <option value="HT ML">HT ML</option>
+              <option value="ML FT">ML FT</option>
+              <option value="DNB">DNB / Empate anula</option>
+              <option value="Team Total">Total da equipe</option>
+              <option value="Classificar">Classificar</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+          <div>
+            <label>Veredito</label>
+            <select id="filterVerdict">
+              <option value="">Todos</option>
+              <option value="analise_correta">Análise correta</option>
+              <option value="erro_analise">Erro de análise</option>
+              <option value="erro_execucao">Erro de execução</option>
+              <option value="variancia">Variância</option>
+              <option value="green">Green</option>
+              <option value="red">Red</option>
+            </select>
+          </div>
+          <div>
+            <label>Entrada feita?</label>
+            <select id="filterEntryMade">
+              <option value="">Todas</option>
+              <option value="true">Sim</option>
+              <option value="false">Não</option>
+            </select>
+          </div>
+          <div>
+            <label>IC mínimo</label>
+            <input id="filterIcMin" inputmode="decimal" placeholder="ex.: 75" />
+          </div>
+          <div>
+            <label>Confiança mínima</label>
+            <input id="filterConfMin" inputmode="decimal" placeholder="ex.: 7" />
+          </div>
+          <div>
+            <label>Robustez mínima</label>
+            <input id="filterRobMin" inputmode="decimal" placeholder="ex.: 70" />
+          </div>
+          <div>
+            <label>FQI mínimo</label>
+            <input id="filterFqiMin" inputmode="decimal" placeholder="ex.: 75" />
+          </div>
+          <div>
+            <label>Motivação mínima</label>
+            <input id="filterMotMin" inputmode="decimal" placeholder="ex.: 80" />
+          </div>
+          <div>
+            <label>Risco máximo</label>
+            <input id="filterRiskMax" inputmode="decimal" placeholder="ex.: 35" />
+          </div>
+          <div>
+            <label>Faixa FQI</label>
+            <select id="filterFqiBand">
+              <option value="">Todas</option>
+              <option value="FQI 80+">FQI 80+</option>
+              <option value="FQI 70-79">FQI 70-79</option>
+              <option value="FQI 60-69">FQI 60-69</option>
+              <option value="FQI <60">FQI &lt;60</option>
+            </select>
+          </div>
+          <div>
+            <label>Faixa Robustez</label>
+            <select id="filterRobBand">
+              <option value="">Todas</option>
+              <option value="Rob 80+">Rob 80+</option>
+              <option value="Rob 70-79">Rob 70-79</option>
+              <option value="Rob 60-69">Rob 60-69</option>
+              <option value="Rob <60">Rob &lt;60</option>
+            </select>
+          </div>
+          <div>
+            <label>Faixa Risco</label>
+            <select id="filterRiskBand">
+              <option value="">Todas</option>
+              <option value="Risco 0-25">Risco 0-25</option>
+              <option value="Risco 26-35">Risco 26-35</option>
+              <option value="Risco 36-45">Risco 36-45</option>
+              <option value="Risco 46+">Risco 46+</option>
+            </select>
+          </div>
+          <div>
+            <label>Texto/observação contém</label>
+            <input id="filterText" placeholder="ex.: #HT_ML, anti-indução" />
+          </div>
+        </div>
+      </details>
+
       <div class="actions">
         <button id="applyFiltersBtn" class="secondary">Aplicar filtros</button>
         <button id="clearFiltersBtn" class="secondary">Limpar filtros</button>
       </div>
 
+      <div class="panel" style="margin-top:10px; padding:12px;">
+        <div class="hint" style="margin-bottom:8px;">Filtros rápidos por índices V26:</div>
+        <div class="actions">
+          <button onclick="applyIndexPreset('elite_fqi')">FQI 80+</button>
+          <button onclick="applyIndexPreset('robusta')">Robustez 75+</button>
+          <button onclick="applyIndexPreset('baixo_risco')">Risco até 35</button>
+          <button onclick="applyIndexPreset('forte')">Combo forte</button>
+          <button onclick="applyIndexPreset('limpar')">Limpar índices</button>
+        </div>
+      </div>
+
+      <div class="deleteBar">
+        <div class="hint">Para remover bilhete carregado errado: selecione o registro e toque em excluir.</div>
+        <div class="actions">
+          <button id="selectAllVisibleBtn" class="secondary">Selecionar visíveis</button>
+          <button id="clearSelectionBtn" class="secondary">Limpar seleção</button>
+          <button id="deleteSelectedBtn" class="danger">Excluir selecionados</button>
+        </div>
+        <div id="selectedInfo" class="hint">0 selecionado(s)</div>
+      </div>
+
       <div id="auditInfo" class="hint"></div>
       <div id="auditSummary" class="hint">Carregando banco...</div>
+
+      
+      <details class="panel" style="margin-top:14px;" open>
+        <summary>Ranking de melhores índices V26</summary>
+        <div class="hint">Ajuda a localizar bilhetes com FQI, robustez, confiança, IC e motivação mais altos, além de menor risco.</div>
+        <div id="indexRankingWrap"></div>
+      </details>
+
+      <details class="panel" style="margin-top:14px;" open>
+        <summary>Faixas automáticas dos índices</summary>
+        <div class="hint">Agrupa os bilhetes por faixas de FQI, robustez, risco, IC e confiança para validar quais zonas performam melhor.</div>
+        <div id="indexBandsWrap"></div>
+      </details>
+
+      <details class="panel" style="margin-top:14px;" open>
+        <summary>Combinações mais vencedoras V26</summary>
+        <div class="hint">Cruza classe, tipo de aposta e faixas dos índices. Use apenas padrões repetidos com amostra razoável.</div>
+        <div id="comboStatsWrap"></div>
+      </details>
+
+      <details class="panel" style="margin-top:14px;" open>
+        <summary>Validador: tipos de aposta mais vencedores</summary>
+        <div class="hint">Mostra quais tipos de aposta estão performando melhor. Amostras pequenas servem como sinal, não como regra final do V26.</div>
+        <div id="winnerStats"></div>
+      </details>
+
       <div id="auditList"></div>
     </details>
   </details>
@@ -447,11 +607,92 @@ function nextLocalId(entries) {
   const maxId = entries.reduce((m,e) => Math.max(m, Number(e.id) || 0), 0);
   return Math.max(maxId + 1, Date.now());
 }
+let selectedAuditIds = new Set();
+
+function val(id) {
+  const el = $(id);
+  return el ? String(el.value || '').trim() : '';
+}
+function numOrNull(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+function textBlob(e) {
+  return [
+    e.match, e.market, e.class_v26, e.decision_state, e.result_status,
+    e.verdict, e.notes, e.main_thesis, e.odds_text,
+    JSON.stringify(e.beo_json || {})
+  ].join(' ').toLowerCase();
+}
+function indexValue(e, key) {
+  if (key === 'fqi') return Number(e.research_fqi_0_100 ?? e.fqi_research_quality_0_100 ?? e.fqi_0_100 ?? 0);
+  if (key === 'rob') return Number(e.robustness_0_100 ?? e.robustez_0_100 ?? 0);
+  if (key === 'risk') return Number(e.risk_0_100 ?? e.risco_0_100 ?? 0);
+  if (key === 'ic') return Number(e.ic_v26_0_100 ?? e.ic_0_100 ?? 0);
+  if (key === 'conf') return Number(e.confidence_0_10 ?? e.confianca_0_10 ?? 0);
+  if (key === 'mot') return Number(e.motivation_0_100 ?? e.motivacao_0_100 ?? 0);
+  return Number(e[key] || 0);
+}
+function fqiBandLabel(e) {
+  const v = indexValue(e, 'fqi');
+  if (v >= 80) return 'FQI 80+';
+  if (v >= 70) return 'FQI 70-79';
+  if (v >= 60) return 'FQI 60-69';
+  return 'FQI <60';
+}
+function robBandLabel(e) {
+  const v = indexValue(e, 'rob');
+  if (v >= 80) return 'Rob 80+';
+  if (v >= 70) return 'Rob 70-79';
+  if (v >= 60) return 'Rob 60-69';
+  return 'Rob <60';
+}
+function riskBandLabel(e) {
+  const v = indexValue(e, 'risk');
+  if (v <= 25) return 'Risco 0-25';
+  if (v <= 35) return 'Risco 26-35';
+  if (v <= 45) return 'Risco 36-45';
+  return 'Risco 46+';
+}
+function icBandLabel(e) {
+  const v = indexValue(e, 'ic');
+  if (v >= 80) return 'IC 80+';
+  if (v >= 70) return 'IC 70-79';
+  if (v >= 60) return 'IC 60-69';
+  return 'IC <60';
+}
+function confBandLabel(e) {
+  const v = indexValue(e, 'conf');
+  if (v >= 8) return 'Conf 8+';
+  if (v >= 7) return 'Conf 7-7.9';
+  if (v >= 6) return 'Conf 6-6.9';
+  return 'Conf <6';
+}
 function auditFilterQuery() {
   return {
-    class_v26: $('filterClass') ? $('filterClass').value : '',
-    result_status: $('filterResult') ? $('filterResult').value : '',
-    decision_state: $('filterState') ? $('filterState').value : ''
+    class_v26: val('filterClass'),
+    result_status: val('filterResult'),
+    decision_state: val('filterState'),
+    market: val('filterMarket').toLowerCase(),
+    bet_type: val('filterBetType'),
+    verdict: val('filterVerdict'),
+    entry_made: val('filterEntryMade'),
+    ic_min: numOrNull(val('filterIcMin')),
+    confidence_min: numOrNull(val('filterConfMin')),
+    robustness_min: numOrNull(val('filterRobMin')),
+    fqi_min: numOrNull(val('filterFqiMin')),
+    motivation_min: numOrNull(val('filterMotMin')),
+    risk_max: numOrNull(val('filterRiskMax')),
+    fqi_band: val('filterFqiBand'),
+    rob_band: val('filterRobBand'),
+    risk_band: val('filterRiskBand'),
+    text: val('filterText').toLowerCase()
   };
 }
 function applyLocalFilters(entries) {
@@ -460,8 +701,59 @@ function applyLocalFilters(entries) {
     if (f.class_v26 && e.class_v26 !== f.class_v26) return false;
     if (f.result_status && e.result_status !== f.result_status) return false;
     if (f.decision_state && e.decision_state !== f.decision_state) return false;
+    if (f.verdict && e.verdict !== f.verdict) return false;
+    if (f.entry_made === 'true' && e.entry_made === false) return false;
+    if (f.entry_made === 'false' && e.entry_made !== false) return false;
+    if (f.market && !String(e.market || '').toLowerCase().includes(f.market)) return false;
+    if (f.bet_type && betTypeFromEntry(e) !== f.bet_type) return false;
+    if (f.ic_min !== null && indexValue(e, 'ic') < f.ic_min) return false;
+    if (f.confidence_min !== null && indexValue(e, 'conf') < f.confidence_min) return false;
+    if (f.robustness_min !== null && indexValue(e, 'rob') < f.robustness_min) return false;
+    if (f.fqi_min !== null && indexValue(e, 'fqi') < f.fqi_min) return false;
+    if (f.motivation_min !== null && indexValue(e, 'mot') < f.motivation_min) return false;
+    if (f.risk_max !== null && indexValue(e, 'risk') > f.risk_max) return false;
+    if (f.fqi_band && fqiBandLabel(e) !== f.fqi_band) return false;
+    if (f.rob_band && robBandLabel(e) !== f.rob_band) return false;
+    if (f.risk_band && riskBandLabel(e) !== f.risk_band) return false;
+    if (f.text && !textBlob(e).includes(f.text)) return false;
     return true;
   });
+}
+function betTypeFromEntry(e) {
+  const m = String(e.market || '').toLowerCase();
+  if (e.bet_type) return e.bet_type;
+  if (m.includes('under') || m.includes('menos') || m.includes('abaixo')) return 'Under';
+  if (m.includes('over') || m.includes('acima')) {
+    if (m.includes('equipe') || m.includes('team') || m.includes('total da equipe') || m.includes('tt')) return 'Team Total';
+    return 'Over';
+  }
+  if (m.includes('ambas') || m.includes('btts')) return 'BTTS';
+  if ((m.includes('handicap') || m.includes('-0.5') || m.includes('+0.5') || m.includes('-0.75') || m.includes('+0.75')) && (m.includes('ht') || m.includes('1º tempo') || m.includes('1 tempo'))) return 'Handicap HT';
+  if (m.includes('handicap')) return 'Handicap FT';
+  if ((m.includes('ht') || m.includes('1º tempo') || m.includes('1 tempo')) && (m.includes('ml') || m.includes('resultado'))) return 'HT ML';
+  if (m.includes('dnb') || m.includes('empate anula')) return 'DNB';
+  if (m.includes('classifica')) return 'Classificar';
+  if (m.includes('total da equipe') || m.includes('team total') || m.includes('tt ')) return 'Team Total';
+  if (m.includes('ml') || m.includes('resultado')) return 'ML FT';
+  return 'Outros';
+}
+function marketFamily(marketOrEntry) {
+  if (typeof marketOrEntry === 'object') return betTypeFromEntry(marketOrEntry);
+  return betTypeFromEntry({market: marketOrEntry});
+}
+function band(value, cuts, labels) {
+  const n = Number(value || 0);
+  for (let i=0; i<cuts.length; i++) if (n <= cuts[i]) return labels[i];
+  return labels[labels.length - 1];
+}
+function riskBand(e) {
+  return band(e.risk_0_100, [30, 40, 55], ['Risco até 30','Risco 31-40','Risco 41-55','Risco 56+']);
+}
+function icBand(e) {
+  return band(e.ic_v26_0_100, [65, 74, 82], ['IC até 65','IC 66-74','IC 75-82','IC 83+']);
+}
+function confidenceBand(e) {
+  return band(Number(e.confidence_0_10 || 0) * 10, [65, 74, 82], ['Conf até 6.5','Conf 6.6-7.4','Conf 7.5-8.2','Conf 8.3+']);
 }
 function calcSummary(entries) {
   const total_records = entries.length;
@@ -472,13 +764,18 @@ function calcSummary(entries) {
   const by = {};
   for (const e of made) {
     const cls = e.class_v26 || 'N/D';
-    if (!by[cls]) by[cls] = {class_v26:cls,total:0,profit_loss_reais:0,stake_sum_reais:0,roi_percent:0};
+    if (!by[cls]) by[cls] = {class_v26:cls,total:0,green:0,red:0,void:0,profit_loss_reais:0,stake_sum_reais:0,roi_percent:0,hit_rate_percent:0};
     by[cls].total += 1;
+    if (e.result_status === 'green') by[cls].green += 1;
+    if (e.result_status === 'red') by[cls].red += 1;
+    if (e.result_status === 'void') by[cls].void += 1;
     by[cls].profit_loss_reais += Number(e.profit_loss_reais || 0);
     by[cls].stake_sum_reais += Number(e.stake_reais || e.actual_stake_reais || 0);
   }
   for (const k of Object.keys(by)) {
+    const risked = by[k].green + by[k].red;
     by[k].roi_percent = by[k].stake_sum_reais ? (by[k].profit_loss_reais / by[k].stake_sum_reais) * 100 : 0;
+    by[k].hit_rate_percent = risked ? (by[k].green / risked) * 100 : 0;
   }
   return {
     total_records,
@@ -489,6 +786,67 @@ function calcSummary(entries) {
     roi_percent: stake ? (pl / stake) * 100 : 0,
     by_class: Object.values(by).sort((a,b)=>String(a.class_v26).localeCompare(String(b.class_v26)))
   };
+}
+function groupStats(entries, label, fn) {
+  const map = {};
+  const made = entries.filter(e => e.entry_made !== false && ['green','red','void'].includes(e.result_status));
+  for (const e of made) {
+    const key = fn(e) || 'N/D';
+    if (!map[key]) map[key] = {type: label, group: key, settled:0, green:0, red:0, void:0, stake:0, pl:0, roi:0, hit:0};
+    const r = map[key];
+    r.settled += 1;
+    if (e.result_status === 'green') r.green += 1;
+    if (e.result_status === 'red') r.red += 1;
+    if (e.result_status === 'void') r.void += 1;
+    r.stake += Number(e.stake_reais || e.actual_stake_reais || 0);
+    r.pl += Number(e.profit_loss_reais || 0);
+  }
+  return Object.values(map).map(r => {
+    const risked = r.green + r.red;
+    r.roi = r.stake ? (r.pl / r.stake) * 100 : 0;
+    r.hit = risked ? (r.green / risked) * 100 : 0;
+    return r;
+  });
+}
+function calcWinnerStats(entries) {
+  const rows = [
+    ...groupStats(entries, 'Classe', e => e.class_v26),
+    ...groupStats(entries, 'Tipo de aposta', e => betTypeFromEntry(e)),
+    ...groupStats(entries, 'Estado', e => e.decision_state),
+    ...groupStats(entries, 'FQI', e => e.research_fqi_label || e.fqi),
+    ...groupStats(entries, 'Risco', e => riskBand(e)),
+    ...groupStats(entries, 'IC', e => icBand(e)),
+    ...groupStats(entries, 'Confiança', e => confidenceBand(e)),
+    ...groupStats(entries, 'Veredito', e => e.verdict)
+  ];
+  return rows
+    .filter(r => r.settled > 0)
+    .sort((a,b) => (b.roi - a.roi) || (b.settled - a.settled) || (b.hit - a.hit));
+}
+function renderWinnerStats(entries) {
+  const rows = calcWinnerStats(entries).slice(0, 60);
+  if (!rows.length) return '<div class="hint">Ainda não há apostas encerradas suficientes para estatística.</div>';
+  return `
+    <div class="statsTableWrap">
+      <table>
+        <thead><tr><th>Tipo</th><th>Grupo</th><th>Encerradas</th><th>Green</th><th>Red</th><th>Void</th><th>Hit rate</th><th>P/L</th><th>ROI</th><th>Amostra</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${escapeHtml(r.type)}</td>
+              <td>${escapeHtml(r.group)}</td>
+              <td>${r.settled}</td>
+              <td>${r.green}</td>
+              <td>${r.red}</td>
+              <td>${r.void}</td>
+              <td>${Number(r.hit||0).toFixed(1)}%</td>
+              <td>R$ ${Number(r.pl||0).toFixed(2)}</td>
+              <td>${Number(r.roi||0).toFixed(1)}%</td>
+              <td>${r.settled < 5 ? '<span class="sampleWarn">pequena</span>' : 'ok'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 function updateAuditEntryLocal(id, values) {
   const entries = loadLocalBank();
@@ -526,6 +884,33 @@ async function closeQuick(id, status) {
     $('auditInfo').innerHTML = `<span class="error">Erro ao fechar #${id}: ${err.message}</span>`;
   }
 }
+async function saveBasicEdit(id) {
+  const get = suffix => document.getElementById(`edit_${id}_${suffix}`);
+  const match = get('match').value.trim();
+  const market = get('market').value.trim();
+  const odd = Number((get('odd').value || '0').replace(',', '.'));
+  const stake = Number((get('stake').value || '0').replace(',', '.'));
+  const cls = get('class').value.trim();
+  const date = get('date').value.trim();
+
+  try {
+    updateAuditEntryLocal(id, {
+      match,
+      market,
+      odd_analyzed: odd,
+      entry_odd: odd,
+      class_v26: cls,
+      date,
+      stake_reais: stake,
+      actual_stake_reais: stake,
+      bet_type: betTypeFromEntry({market})
+    });
+    $('auditInfo').innerHTML = `<span class="success">Dados básicos #${id} atualizados.</span>`;
+    await refreshAudit();
+  } catch (err) {
+    $('auditInfo').innerHTML = `<span class="error">Erro ao editar dados básicos #${id}: ${err.message}</span>`;
+  }
+}
 async function saveAuditEdit(id) {
   const get = suffix => document.getElementById(`audit_${id}_${suffix}`);
   const result = get('result').value;
@@ -556,23 +941,61 @@ async function saveAuditEdit(id) {
 }
 function renderAuditEntry(e) {
   const id = e.id;
+  const checked = selectedAuditIds.has(String(id)) ? 'checked' : '';
+  const ic = Number(e.ic_v26_0_100 || 0);
+  const conf = Number(e.confidence_0_10 || 0);
+  const risk = Number(e.risk_0_100 || 0);
   return `
     <div class="auditItem">
+      <label class="selectLine">
+        <input type="checkbox" class="auditSelect" data-id="${id}" ${checked} onchange="toggleAuditSelection('${id}', this.checked)" />
+        <span>Selecionar para excluir</span>
+      </label>
       <div class="auditTop">
-        <b>#${id} · ${e.match || 'Jogo'}</b>
-        <span class="badge">${e.decision_state || 'N/D'} · ${e.class_v26 || 'N/D'} · ${e.result_status || 'pending'}</span>
+        <b>#${id} · ${escapeHtml(e.match || 'Jogo')}</b>
+        <span class="badge">${escapeHtml(betTypeFromEntry(e))} · ${escapeHtml(e.decision_state || 'N/D')} · ${escapeHtml(e.class_v26 || 'N/D')} · ${escapeHtml(e.result_status || 'pending')}</span>
       </div>
       <div class="small" style="margin-top:6px;">
-        ${e.market || 'Mercado não informado'} @${e.odd_analyzed || 'N/D'} · EV ${Number(e.ev_percent||0).toFixed(1)}% · Stake R$ ${Number(e.stake_reais||0).toFixed(2)}
+        ${escapeHtml(e.market || 'Mercado não informado')} @${e.odd_analyzed || 'N/D'} · EV ${Number(e.ev_percent||0).toFixed(1)}% · Stake R$ ${Number(e.stake_reais||0).toFixed(2)}
       </div>
       <div class="small" style="color:var(--muted);margin-top:4px;">
-        Resultado: ${e.result_status || 'pending'} · P/L R$ ${Number(e.profit_loss_reais||0).toFixed(2)}
+        IC ${ic || 'N/D'} · Conf ${conf || 'N/D'} · Risco ${risk || 'N/D'} · P/L R$ ${Number(e.profit_loss_reais||0).toFixed(2)}
       </div>
       <div class="quickBtns">
         <button class="good" onclick="closeQuick(${id}, 'green')">GREEN</button>
         <button class="warn" onclick="closeQuick(${id}, 'void')">VOID</button>
         <button class="danger" onclick="closeQuick(${id}, 'red')">RED</button>
       </div>
+      <details style="margin-top:10px;">
+        <summary>Editar dados básicos</summary>
+        <div class="auditControls">
+          <div>
+            <label>Jogo</label>
+            <input id="edit_${id}_match" value="${escapeHtml(e.match || '')}" />
+          </div>
+          <div>
+            <label>Mercado</label>
+            <input id="edit_${id}_market" value="${escapeHtml(e.market || '')}" />
+          </div>
+          <div>
+            <label>Odd entrada</label>
+            <input id="edit_${id}_odd" value="${Number(e.entry_odd || e.odd_analyzed || 0)}" />
+          </div>
+          <div>
+            <label>Stake real R$</label>
+            <input id="edit_${id}_stake" value="${Number(e.stake_reais || e.actual_stake_reais || 0).toFixed(2)}" />
+          </div>
+          <div>
+            <label>Classe</label>
+            <input id="edit_${id}_class" value="${escapeHtml(e.class_v26 || '')}" />
+          </div>
+          <div>
+            <label>Data</label>
+            <input id="edit_${id}_date" value="${escapeHtml(e.date || '')}" />
+          </div>
+        </div>
+        <div class="actions"><button class="good" onclick="saveBasicEdit(${id})">Salvar dados básicos</button></div>
+      </details>
       <details style="margin-top:10px;">
         <summary>Auditar / editar resultado</summary>
         <div class="auditControls">
@@ -626,11 +1049,171 @@ function renderAuditEntry(e) {
           </div>
         </div>
         <label>Observações da auditoria</label>
-        <textarea id="audit_${id}_notes">${(e.notes || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+        <textarea id="audit_${id}_notes">${escapeHtml(e.notes || '')}</textarea>
         <div class="actions"><button class="good" onclick="saveAuditEdit(${id})">Salvar auditoria</button></div>
       </details>
     </div>`;
 }
+function updateSelectedInfo() {
+  const el = $('selectedInfo');
+  if (el) el.textContent = `${selectedAuditIds.size} selecionado(s)`;
+}
+function toggleAuditSelection(id, checked) {
+  if (checked) selectedAuditIds.add(String(id));
+  else selectedAuditIds.delete(String(id));
+  updateSelectedInfo();
+}
+async function deleteSelectedEntries() {
+  if (!selectedAuditIds.size) {
+    $('auditInfo').innerHTML = '<span class="warning">Nenhum bilhete selecionado para excluir.</span>';
+    return;
+  }
+  const ids = Array.from(selectedAuditIds);
+  const ok = confirm(`Excluir ${ids.length} bilhete(s) selecionado(s)? Use isso só para bilhetes carregados errado.`);
+  if (!ok) return;
+  const entries = loadLocalBank();
+  const next = entries.filter(e => !selectedAuditIds.has(String(e.id)));
+  saveLocalBank(next);
+  selectedAuditIds.clear();
+  $('auditInfo').innerHTML = `<span class="success">${entries.length - next.length} bilhete(s) excluído(s) do banco local.</span>`;
+  await refreshAudit();
+}
+
+function applyIndexPreset(kind) {
+  const setVal = (id, value) => { const el = $(id); if (el) el.value = value; };
+  if (kind === 'elite_fqi') {
+    setVal('filterFqiMin', '80');
+  } else if (kind === 'robusta') {
+    setVal('filterRobMin', '75');
+  } else if (kind === 'baixo_risco') {
+    setVal('filterRiskMax', '35');
+  } else if (kind === 'forte') {
+    setVal('filterIcMin', '75');
+    setVal('filterConfMin', '7');
+    setVal('filterRobMin', '75');
+    setVal('filterFqiMin', '80');
+    setVal('filterMotMin', '75');
+    setVal('filterRiskMax', '35');
+  } else if (kind === 'limpar') {
+    ['filterIcMin','filterConfMin','filterRobMin','filterFqiMin','filterMotMin','filterRiskMax','filterFqiBand','filterRobBand','filterRiskBand'].forEach(id => setVal(id, ''));
+  }
+  refreshAudit();
+}
+function statRowsFor(entries, groupType, labelFn) {
+  const map = {};
+  const settled = entries.filter(e => ['green','red','void'].includes(e.result_status));
+  for (const e of settled) {
+    const key = labelFn(e) || 'N/D';
+    if (!map[key]) map[key] = {type: groupType, group: key, settled:0, green:0, red:0, void:0, stake:0, pl:0, roi:0, hit:0};
+    const r = map[key];
+    r.settled += 1;
+    if (e.result_status === 'green') r.green += 1;
+    if (e.result_status === 'red') r.red += 1;
+    if (e.result_status === 'void') r.void += 1;
+    r.stake += Number(e.stake_reais || e.actual_stake_reais || 0);
+    r.pl += Number(e.profit_loss_reais || 0);
+  }
+  return Object.values(map).map(r => {
+    const risked = r.green + r.red;
+    r.roi = r.stake ? (r.pl / r.stake) * 100 : 0;
+    r.hit = risked ? (r.green / risked) * 100 : 0;
+    return r;
+  }).sort((a,b) => (b.roi - a.roi) || (b.settled - a.settled));
+}
+function renderStatsTable(rows) {
+  if (!rows.length) return '<div class="hint">Ainda não há apostas encerradas suficientes.</div>';
+  return `<div class="statsTableWrap">
+    <table>
+      <thead><tr><th>Tipo</th><th>Grupo</th><th>Enc.</th><th>Green</th><th>Red</th><th>Void</th><th>Hit</th><th>P/L</th><th>ROI</th><th>Amostra</th></tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr>
+          <td>${escapeHtml(r.type)}</td>
+          <td>${escapeHtml(r.group)}</td>
+          <td>${r.settled}</td>
+          <td>${r.green}</td>
+          <td>${r.red}</td>
+          <td>${r.void}</td>
+          <td>${Number(r.hit||0).toFixed(1)}%</td>
+          <td>R$ ${Number(r.pl||0).toFixed(2)}</td>
+          <td>${Number(r.roi||0).toFixed(1)}%</td>
+          <td>${r.settled < 5 ? '<span class="sampleWarn">pequena</span>' : 'ok'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+function renderIndexRanking(entries) {
+  const box = $('indexRankingWrap');
+  if (!box) return;
+  if (!entries.length) {
+    box.innerHTML = '<div class="hint">Nenhum bilhete encontrado com os filtros atuais.</div>';
+    return;
+  }
+  const topN = 8;
+  const groups = [
+    {title:'Top FQI', key:'fqi', asc:false, fmt:v => `${Number(v).toFixed(0)}`},
+    {title:'Top Robustez', key:'rob', asc:false, fmt:v => `${Number(v).toFixed(0)}`},
+    {title:'Top Confiança', key:'conf', asc:false, fmt:v => `${Number(v).toFixed(1)}/10`},
+    {title:'Top IC', key:'ic', asc:false, fmt:v => `${Number(v).toFixed(0)}`},
+    {title:'Top Motivação', key:'mot', asc:false, fmt:v => `${Number(v).toFixed(0)}`},
+    {title:'Menor risco', key:'risk', asc:true, fmt:v => `${Number(v).toFixed(0)}`}
+  ];
+  let out = '';
+  groups.forEach(g => {
+    const rows = [...entries].sort((a,b) => g.asc ? indexValue(a,g.key) - indexValue(b,g.key) : indexValue(b,g.key) - indexValue(a,g.key)).slice(0, topN);
+    out += `<div style="margin:14px 0;">
+      <h4 style="margin:0 0 8px 0;">${g.title}</h4>
+      <div class="statsTableWrap">
+        <table>
+          <thead><tr><th>#</th><th>Jogo</th><th>Mercado</th><th>Classe</th><th>Valor</th><th>Resultado</th></tr></thead>
+          <tbody>
+            ${rows.map((e, idx) => `<tr>
+              <td>${idx + 1}</td>
+              <td>${escapeHtml(e.match || '-')}</td>
+              <td>${escapeHtml(e.market || '-')}</td>
+              <td>${escapeHtml(e.class_v26 || '-')}</td>
+              <td>${g.fmt(indexValue(e,g.key))}</td>
+              <td>${escapeHtml(e.result_status || 'pending')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+  box.innerHTML = out;
+}
+function renderIndexBands(entries) {
+  const box = $('indexBandsWrap');
+  if (!box) return;
+  const rows = [
+    ...statRowsFor(entries, 'FQI', fqiBandLabel),
+    ...statRowsFor(entries, 'Robustez', robBandLabel),
+    ...statRowsFor(entries, 'Risco', riskBandLabel),
+    ...statRowsFor(entries, 'IC', icBandLabel),
+    ...statRowsFor(entries, 'Confiança', confBandLabel)
+  ];
+  box.innerHTML = renderStatsTable(rows);
+}
+function comboKey(e, mode) {
+  if (mode === 'classe_tipo_fqi_risco') return `${e.class_v26 || 'N/D'} + ${betTypeFromEntry(e)} + ${fqiBandLabel(e)} + ${riskBandLabel(e)}`;
+  if (mode === 'tipo_rob_risco') return `${betTypeFromEntry(e)} + ${robBandLabel(e)} + ${riskBandLabel(e)}`;
+  if (mode === 'classe_ic_risco') return `${e.class_v26 || 'N/D'} + ${icBandLabel(e)} + ${riskBandLabel(e)}`;
+  return `${betTypeFromEntry(e)} + ${fqiBandLabel(e)}`;
+}
+function renderComboStats(entries) {
+  const box = $('comboStatsWrap');
+  if (!box) return;
+  const rows = [
+    ...statRowsFor(entries, 'Classe+Tipo+FQI+Risco', e => comboKey(e, 'classe_tipo_fqi_risco')),
+    ...statRowsFor(entries, 'Tipo+Robustez+Risco', e => comboKey(e, 'tipo_rob_risco')),
+    ...statRowsFor(entries, 'Classe+IC+Risco', e => comboKey(e, 'classe_ic_risco'))
+  ]
+  .filter(r => r.settled > 0)
+  .sort((a,b) => (b.roi - a.roi) || (b.settled - a.settled))
+  .slice(0, 50);
+  box.innerHTML = renderStatsTable(rows);
+}
+
 async function refreshAudit() {
   const entriesAll = loadLocalBank();
   const summary = calcSummary(entriesAll);
@@ -644,12 +1227,17 @@ async function refreshAudit() {
       <div class="metric"><b>${summary.settled}</b><span>Encerradas</span></div>
     </div>
     <h3>ROI por classe</h3>
-    <table><thead><tr><th>Classe</th><th>Total</th><th>Lucro/Prejuízo</th><th>Stake</th><th>ROI</th></tr></thead><tbody>
-    ${(summary.by_class || []).map(r => `<tr><td>${r.class_v26}</td><td>${r.total}</td><td>R$ ${Number(r.profit_loss_reais||0).toFixed(2)}</td><td>R$ ${Number(r.stake_sum_reais||0).toFixed(2)}</td><td>${Number(r.roi_percent||0).toFixed(2)}%</td></tr>`).join('')}
+    <table><thead><tr><th>Classe</th><th>Total</th><th>Green</th><th>Red</th><th>Hit</th><th>Lucro/Prejuízo</th><th>Stake</th><th>ROI</th></tr></thead><tbody>
+    ${(summary.by_class || []).map(r => `<tr><td>${escapeHtml(r.class_v26)}</td><td>${r.total}</td><td>${r.green}</td><td>${r.red}</td><td>${Number(r.hit_rate_percent||0).toFixed(1)}%</td><td>R$ ${Number(r.profit_loss_reais||0).toFixed(2)}</td><td>R$ ${Number(r.stake_sum_reais||0).toFixed(2)}</td><td>${Number(r.roi_percent||0).toFixed(2)}%</td></tr>`).join('')}
     </tbody></table>`;
   const entries = applyLocalFilters(entriesAll);
   window.auditEntriesCache = entries;
+  if ($('winnerStats')) $('winnerStats').innerHTML = renderWinnerStats(entries);
+  if ($('indexRankingWrap')) renderIndexRanking(entries);
+  if ($('indexBandsWrap')) renderIndexBands(entries);
+  if ($('comboStatsWrap')) renderComboStats(entries);
   $('auditList').innerHTML = entries.length ? entries.map(renderAuditEntry).join('') : '<div class="hint">Nenhum registro encontrado com estes filtros.</div>';
+  updateSelectedInfo();
 }
 $('importChatBtn').addEventListener('click', async () => {
   const raw = $('chatJsonInput').value.trim();
@@ -660,7 +1248,7 @@ $('importChatBtn').addEventListener('click', async () => {
     parsed.id = nextLocalId(entries);
     entries.unshift(parsed);
     saveLocalBank(entries);
-    $('chatImportInfo').innerHTML = `<span class="success">Importado localmente: #${parsed.id} · ${parsed.match || ''}</span>`;
+    $('chatImportInfo').innerHTML = `<span class="success">Importado localmente: #${parsed.id} · ${escapeHtml(parsed.match || '')}</span>`;
     $('chatJsonInput').value = '';
     await refreshAudit();
   } catch (err) {
@@ -670,15 +1258,24 @@ $('importChatBtn').addEventListener('click', async () => {
 $('loadAuditBtn').addEventListener('click', refreshAudit);
 $('applyFiltersBtn').addEventListener('click', refreshAudit);
 $('clearFiltersBtn').addEventListener('click', async () => {
-  $('filterClass').value = '';
-  $('filterResult').value = '';
-  $('filterState').value = '';
+  ['filterClass','filterResult','filterState','filterMarket','filterBetType','filterVerdict','filterEntryMade','filterIcMin','filterConfMin','filterRobMin','filterFqiMin','filterMotMin','filterRiskMax','filterFqiBand','filterRobBand','filterRiskBand','filterText'].forEach(id => {
+    const el = $(id); if (el) el.value = '';
+  });
   await refreshAudit();
 });
+$('selectAllVisibleBtn').addEventListener('click', async () => {
+  (window.auditEntriesCache || []).forEach(e => selectedAuditIds.add(String(e.id)));
+  await refreshAudit();
+});
+$('clearSelectionBtn').addEventListener('click', async () => {
+  selectedAuditIds.clear();
+  await refreshAudit();
+});
+$('deleteSelectedBtn').addEventListener('click', deleteSelectedEntries);
 function makeBackupObject() {
   return {
     app: 'V26',
-    version: 'v4.0.3-local-bank',
+    version: 'v4.0.7-index-bands-combos',
     exported_at: new Date().toISOString(),
     entries: loadLocalBank()
   };
